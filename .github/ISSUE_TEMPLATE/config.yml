@@ -7,5 +7,5 @@ contact_links:
     url: https://github.com/TheGresta/DotNet.Architect.Playbook/discussions
     about: Ask questions and chat with the community here.
   - name: 📖 Documentation
-    url: https://your-docs-site.com
+    url: https://github.com/TheGresta/DotNet.Architect.Playbook/blob/main/.github/CONTRIBUTING.md
     about: Please check the docs before opening an issue.
