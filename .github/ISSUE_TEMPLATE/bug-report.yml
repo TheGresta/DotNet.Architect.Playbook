@@ -1,0 +1,23 @@
+name: 🐛 Bug Report
+description: File a report to help us improve.
+title: "[BUG]: <Short Title>"
+labels: ["bug", "priority-medium"]
+body:
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 👣 Steps to Reproduce
+      description: Tell us exactly how to trigger this bug.
+      placeholder: "1. Go to '...'\n2. Click on '...'\n3. See error"
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 🔢 Version/Environment
+      placeholder: "e.g. v1.2.0, Chrome 120, Windows 11"
+  - type: textarea
+    id: logs
+    attributes:
+      label: 📋 Error Logs/Screenshots
+      description: Paste any terminal output or drag-and-drop screenshots here.
