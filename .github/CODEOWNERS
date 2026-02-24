@@ -1,0 +1,8 @@
+# Everyone gets reviewed by you by default
+* @TheGresta
+
+# Messaging projects must be reviewed by you AND your messaging expert
+/src/Messaging/  @TheGresta
+
+# Security docs need a double-check
+/docs/Security.md @TheGresta
