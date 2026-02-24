@@ -3,12 +3,11 @@ name: "🚀 Automated Semantic Release"
 on:
   push:
     branches:
-      - main  # Triggers every time you merge a PR into main
+      - main
 
 jobs:
   release:
     runs-on: ubuntu-latest
-    concurrency: release # Prevents double-deployments
     permissions:
       contents: write
       issues: write
@@ -28,8 +27,4 @@ jobs:
         uses: cycjimmy/semantic-release-action@v4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          # This plugin handles the versioning and the notes
-          extra_plugins: |
-            @semantic-release/changelog
-            @semantic-release/git
+        # We don't need "extra_plugins" here anymore because they are in .releaserc
