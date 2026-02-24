@@ -1,28 +1,35 @@
-name: "🚀 Auto Release"
+name: "🚀 Automated Semantic Release"
 
 on:
   push:
-    tags:
-      - "v*.*.*" # Triggers when you push a tag like v1.0.0
+    branches:
+      - main  # Triggers every time you merge a PR into main
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    concurrency: release # Prevents double-deployments
     permissions:
-      contents: write # Important: Allows the bot to create the release
+      contents: write
+      issues: write
+      pull-requests: write
     steps:
-      - name: 📥 Checkout Code
+      - name: 📥 Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetches all history for accurate changelogs
+          fetch-depth: 0
 
-      - name: 🏷️ Generate Release
-        uses: softprops/action-gh-release@v1
+      - name: 🏗️ Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          generate_release_notes: true # This is the "Magic" - it reads your PRs/Commits
-          draft: false
-          prerelease: false
-          name: "Release ${{ github.ref_name }}"
-          body: |
-            ## 📝 What's Changed in this Version
-            *Automatic summary generated from PRs and Commits.*
+          node-version: 'lts/*'
+
+      - name: 🚀 Semantic Release
+        uses: cycjimmy/semantic-release-action@v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          # This plugin handles the versioning and the notes
+          extra_plugins: |
+            @semantic-release/changelog
+            @semantic-release/git
