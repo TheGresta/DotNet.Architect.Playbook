@@ -1,0 +1,60 @@
+# .coderabbit.yaml
+language: "en-US"
+early_access: true # Enable latest 2026 AI models
+
+reviews:
+  profile: assertive # High strictness for an Architect Playbook
+  request_changes_workflow: true # AI can suggest blocking the PR if rules are broken
+  high_level_summary: true
+  
+  # Global instructions for every PR
+  instructions: |
+    You are a Lead .NET Architect reviewing an 'Architectural Playbook'.
+    Your tone should be professional, mentor-like, and highly technical.
+    
+    CORE DIRECTIVES:
+    1. DRY & SOLID: Strictly enforce Single Responsibility and Interface Segregation.
+    2. CLEAN CODE: Reject single-letter variables, deep nesting (>3 levels), or methods >25 lines.
+    3. PATTERN INTEGRITY: If a design pattern is used (e.g., Factory, Strategy), ensure it's implemented correctly.
+    4. PERFORMANCE: Flag unnecessary allocations, missing 'CancellationToken' in async methods, or N+1 query issues.
+
+  # Path-specific intelligence: The AI adapts its "brain" based on the folder
+  path_instructions:
+    - path: "src/Messaging/**"
+      instructions: |
+        Focus on Distributed Systems patterns. Check for:
+        - Proper retry policies (Polly).
+        - Idempotent consumer logic.
+        - Correct use of exchange types and dead-letter queues.
+
+    - path: "src/Persistence/**"
+      instructions: |
+        Focus on Data Integrity. Check for:
+        - Efficient querying (avoiding Select *).
+        - Proper use of Transactions or Atomic operations.
+        - Correct Indexing strategy suggestions.
+
+    - path: "src/Architecture/**"
+      instructions: |
+        This is a Core Pattern. Be extremely strict. 
+        - Ensure zero leakage of infrastructure into the Domain layer.
+        - Verify that CQRS commands are truly immutable.
+
+  # Tools & Linters Integration
+  tools:
+    gitleaks:
+      enabled: true # Scans for accidental secrets/keys
+    dotnet-format:
+      enabled: true # Aligns with your .editorconfig
+
+# Automatic walkthrough generation with architectural diagrams
+chat:
+  enabled: true
+  allow_react_to_comments: true
+
+# Keep the repo clean by ignoring generated files
+path_filters:
+  - "!**/obj/**"
+  - "!**/bin/**"
+  - "!**/*.suo"
+  - "!**/*.user"
