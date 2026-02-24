@@ -1,0 +1,9 @@
+frontend:
+  - 'src/ui/**/*'
+  - 'public/**/*'
+backend:
+  - 'api/**/*'
+  - 'db/**/*'
+documentation:
+  - 'docs/**/*'
+  - '*.md'
