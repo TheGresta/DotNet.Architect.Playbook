@@ -1,0 +1,11 @@
+# This prevents users from seeing the "Open a blank issue" option
+blank_issues_enabled: false
+
+# You can add external links here (optional)
+contact_links:
+  - name: 💬 Community Discussions
+    url: https://github.com/TheGresta/DotNet.Architect.Playbook/discussions
+    about: Ask questions and chat with the community here.
+  - name: 📖 Documentation
+    url: https://your-docs-site.com
+    about: Please check the docs before opening an issue.
