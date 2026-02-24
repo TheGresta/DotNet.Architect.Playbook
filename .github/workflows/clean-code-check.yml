@@ -1,0 +1,14 @@
+name: "🧼 Clean Code Check"
+on: [pull_request]
+
+jobs:
+  enforce-style:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 🏗️ Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: 🔎 Verify Formatting
+        run: dotnet format --verify-no-changes --verbosity diagnostic
