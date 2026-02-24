@@ -1,0 +1,46 @@
+name: "🏗️ PR Integrity Check"
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  check-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛡️ Check Branch Naming Convention
+        run: |
+          # Regex for: type/issue-number-description
+          BRANCH_NAME="${{ github.head_ref }}"
+          REGEX="^(feat|fix|docs|refactor|chore|test)\/[0-9]+-.+"
+          if [[ ! $BRANCH_NAME =~ $REGEX ]]; then
+            echo "❌ Error: Branch name '$BRANCH_NAME' is invalid."
+            echo "Format must be: type/issue-number-description (e.g., feat/12-login-page)"
+            exit 1
+          fi
+
+      - name: 📝 Check PR Title Convention
+        run: |
+          # Regex for: type(scope): [Issue #ID] description
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          REGEX="^(feat|fix|docs|refactor|chore|test)(\(.*\))?: \[Issue #[0-9]+\] .+"
+          if [[ ! "$PR_TITLE" =~ $REGEX ]]; then
+            echo "❌ Error: PR Title '$PR_TITLE' is invalid."
+            echo "Format must be: type(scope): [Issue #123] description"
+            exit 1
+          fi
+
+      - name: 🔗 Check for Linked Issue
+        run: |
+          PR_BODY="${{ github.event.pull_request.body }}"
+          # Look for "Closes #123" or "Fixes #123" case-insensitive
+          if [[ ! "$PR_BODY" =~ [Cc]loses\ #[0-9]+ ]] && [[ ! "$PR_BODY" =~ [Ff]ixes\ #[0-9]+ ]]; then
+            echo "❌ Error: You must link an issue in the description (e.g., 'Closes #123')."
+            exit 1
+          fi
+
+      - name: 👤 Check for Assignee
+        if: github.event.pull_request.assignee == null
+        run: |
+          echo "❌ Error: Please assign someone to this Pull Request."
+          exit 1
