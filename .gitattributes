@@ -1,15 +1,38 @@
-# Handle line endings automatically for files detected as text 
-# and leave binary files alone.
+# 1. Global: Handle all files as text and normalize to LF on check-in
 * text=auto eol=lf
 
-# Explicitly declare code files to always use LF
-*.cs text eol=lf
+# 2. Source Code: Explicitly force LF for C# and Project files
+*.cs     text eol=lf
 *.csproj text eol=lf
-*.sln text eol=lf
+*.sln    text eol=lf
 *.config text eol=lf
-*.editorconfig text eol=lf
-*.json text eol=lf
+*.props  text eol=lf
+*.targets text eol=lf
 
-# Standardize web/doc files
-*.md text eol=lf
-*.yml text eol=lf
+# 3. Configuration & Metadata
+*.editorconfig text eol=lf
+*.json         text eol=lf
+*.yml          text eol=lf
+*.yaml         text eol=lf
+*.md           text eol=lf
+.gitignore     text eol=lf
+
+# 4. Web & Frontend (If applicable)
+*.js     text eol=lf
+*.ts     text eol=lf
+*.css    text eol=lf
+*.html   text eol=lf
+
+# 5. Shell Scripts: MUST be LF to run on Linux/Actions
+*.sh     text eol=lf
+*.bash   text eol=lf
+
+# 6. Binary Files: Tell Git NOT to touch these
+*.exe   binary
+*.dll   binary
+*.pdb   binary
+*.jpg   binary
+*.png   binary
+*.gif   binary
+*.ico   binary
+*.zip   binary
