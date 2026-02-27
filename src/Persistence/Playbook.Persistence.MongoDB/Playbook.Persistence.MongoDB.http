@@ -1,0 +1,93 @@
+@baseUrl = http://localhost:5231
+@controller = ExceptionMessageDocument
+@id = 00000000-0000-0000-0000-000000000001
+
+
+### ============================================
+### ExceptionDocument API
+### Base Route: /ExceptionMessageDocument
+### Controller: ExceptionMessageDocumentController
+### ============================================
+
+
+
+### -------------------------------------------------
+### 1. Get All Exception Message Documents
+### Description:
+### Returns all exception message documents from the database.
+### Method: GET
+### Route: /ExceptionMessageDocument
+### -------------------------------------------------
+GET {{baseUrl}}/{{controller}}
+Accept: application/json
+
+
+
+### -------------------------------------------------
+### 2. Get Exception Documents with Pagination
+### Description:
+### Returns paginated exception message documents.
+### Query Parameters:
+### - page: Page index (starting from 0)
+### - size: Number of records per page
+### Method: GET
+### Route: /ExceptionMessageDocument/paginate?page={page}&size={size}
+### -------------------------------------------------
+GET {{baseUrl}}/{{controller}}/paginate?page=0&size=10
+Accept: application/json
+
+
+
+### -------------------------------------------------
+### 3. Add New Exception Document
+### Description:
+### Creates a new exception message document.
+### Body:
+### - code: Unique exception code
+### - message: Human readable exception message
+### Method: POST
+### Route: /ExceptionMessageDocument
+### -------------------------------------------------
+POST {{baseUrl}}/{{controller}}
+Content-Type: application/json
+
+{
+  "code": "ERR001",
+  "message": "Unexpected server error occurred."
+}
+
+
+
+### -------------------------------------------------
+### 4. Update Existing Exception Message Document
+### Description:
+### Updates an existing exception document by Id.
+### Route Parameter:
+### - id: Guid of the document
+### Body:
+### - code: Updated exception code
+### - message: Updated exception message
+### Method: PUT
+### Route: /ExceptionMessageDocument/{id}
+### -------------------------------------------------
+PUT {{baseUrl}}/{{controller}}/{{id}}
+Content-Type: application/json
+
+{
+  "code": "ERR001_UPDATED",
+  "message": "Updated error message."
+}
+
+
+
+### -------------------------------------------------
+### 5. Delete Exception Message Document
+### Description:
+### Deletes an exception document by Id.
+### Route Parameter:
+### - id: Guid of the document
+### Method: DELETE
+### Route: /ExceptionMessageDocument/{id}
+### -------------------------------------------------
+DELETE {{baseUrl}}/{{controller}}/{{id}}
+Accept: application/json

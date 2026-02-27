@@ -1,0 +1,33 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36511.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Persistence", "Persistence", "{B8CE2325-FEDF-4E98-A36F-75A895F6895F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Playbook.Persistence.MongoDB", "src\Persistence\Playbook.Persistence.MongoDB\Playbook.Persistence.MongoDB.csproj", "{4031D89B-E297-425E-9BF0-2173A303C72D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4031D89B-E297-425E-9BF0-2173A303C72D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4031D89B-E297-425E-9BF0-2173A303C72D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4031D89B-E297-425E-9BF0-2173A303C72D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4031D89B-E297-425E-9BF0-2173A303C72D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B8CE2325-FEDF-4E98-A36F-75A895F6895F} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{4031D89B-E297-425E-9BF0-2173A303C72D} = {B8CE2325-FEDF-4E98-A36F-75A895F6895F}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EA232F1A-641A-407A-B4CE-E71BB7CF7D6B}
+	EndGlobalSection
+EndGlobal
