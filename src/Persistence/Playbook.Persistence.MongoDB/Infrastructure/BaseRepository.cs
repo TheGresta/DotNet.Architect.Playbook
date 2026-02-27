@@ -130,6 +130,7 @@ internal class BaseRepository<TDocument>(MongoDbContext context) : IBaseReposito
 
         if (result.ModifiedCount == 0)
         {
+            document.Version = currentVersion;
             throw new InvalidOperationException($"Concurrency conflict: Document {document.Id} was modified or does not exist.");
         }
     }

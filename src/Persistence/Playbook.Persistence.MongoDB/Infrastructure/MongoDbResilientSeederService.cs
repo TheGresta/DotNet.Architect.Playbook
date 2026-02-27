@@ -59,8 +59,8 @@ internal class MongoDbResilientSeederService(
         var config = new TConfig();
 
         // A. Handle Indexes
-        IEnumerable<CreateIndexModel<TDocument>> indexModels = config.ConfigureIndexes(Builders<TDocument>.IndexKeys);
-        if (indexModels.Any())
+        var indexModels = config.ConfigureIndexes(Builders<TDocument>.IndexKeys).ToList();
+        if (indexModels.Count > 0)
         {
             await collection.Indexes.CreateManyAsync(indexModels, ct);
         }
@@ -68,8 +68,8 @@ internal class MongoDbResilientSeederService(
         // B. Handle Seed Data
         if (!await collection.Find(Builders<TDocument>.Filter.Empty).AnyAsync(ct))
         {
-            IEnumerable<TDocument> seedData = config.SeedData();
-            if (seedData.Any())
+            var seedData = config.SeedData().ToList();
+            if (seedData.Count > 0)
             {
                 await collection.InsertManyAsync(seedData, cancellationToken: ct);
             }

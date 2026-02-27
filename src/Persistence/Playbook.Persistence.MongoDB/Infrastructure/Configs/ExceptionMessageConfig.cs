@@ -8,7 +8,9 @@ internal class ExceptionMessageConfig : IDocumentConfiguration<ExceptionMessageD
 {
     public IEnumerable<CreateIndexModel<ExceptionMessageDocument>> ConfigureIndexes(IndexKeysDefinitionBuilder<ExceptionMessageDocument> builder)
     {
-        yield return new CreateIndexModel<ExceptionMessageDocument>(builder.Ascending(x => x.Code));
+        yield return new CreateIndexModel<ExceptionMessageDocument>(
+            builder.Ascending(x => x.Code),
+            new CreateIndexOptions { Unique = true });
     }
 
     public IEnumerable<ExceptionMessageDocument> SeedData() => [

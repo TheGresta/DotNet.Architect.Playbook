@@ -25,7 +25,7 @@ public class Paginate<T>
     /// Gets the total number of pages based on the <see cref="Count"/> and <see cref="Size"/>.
     /// </summary>
     /// <value>The calculated number of pages, rounded up to the nearest integer.</value>
-    public int Pages => (int)Math.Ceiling(Count / (double)Size);
+    public int Pages => Size > 0 ? (int)Math.Ceiling(Count / (double)Size) : 0;
 
     /// <summary>
     /// Gets or sets the collection of items for the current page.

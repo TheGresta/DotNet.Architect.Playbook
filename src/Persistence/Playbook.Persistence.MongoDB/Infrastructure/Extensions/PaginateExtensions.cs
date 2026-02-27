@@ -41,6 +41,10 @@ internal static class PaginateExtensions
         int size,
         CancellationToken ct = default)
     {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfLessThan(size, 1);
+
         // This execution happens ON the MongoDB Server
         var count = await source.CountAsync(ct);
         List<T> items = await source.Skip(index * size).Take(size).ToListAsync(ct);

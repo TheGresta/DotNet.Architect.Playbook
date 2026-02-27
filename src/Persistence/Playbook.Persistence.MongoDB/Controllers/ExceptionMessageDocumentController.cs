@@ -52,7 +52,7 @@ public class ExceptionMessageDocumentController(IDocumentCollection documentColl
             return Ok();
         }
 
-        return BadRequest();
+        return NotFound();
     }
 
     [HttpDelete("{id}")]

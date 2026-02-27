@@ -21,6 +21,13 @@ internal class DocumentCollection(MongoDbContext context) : IDocumentCollection
 
     public async Task BeginTransactionAsync(CancellationToken ct)
     {
+        if (_session is { IsInTransaction: true })
+        {
+            throw new InvalidOperationException("A transaction is already active.");
+        }
+
+        _session?.Dispose();
+
         // 1. Start the session
         _session = await context.Client.StartSessionAsync(cancellationToken: ct);
 
@@ -69,7 +76,7 @@ internal class DocumentCollection(MongoDbContext context) : IDocumentCollection
 
     public void Dispose()
     {
-        _session?.Dispose();
+        ClearSession();
         GC.SuppressFinalize(this);
     }
 }

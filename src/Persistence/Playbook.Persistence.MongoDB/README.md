@@ -1,4 +1,4 @@
-# 🏛️ [Chapter Name: e.g., Persistence with Redis]
+# 🏛️ Persistence with MongoDB
 
 <div align="left">
     <img src="https://img.shields.io/badge/Pattern-Repository_&_Unit_of_Work-B10610?style=for-the-badge" />
@@ -40,7 +40,7 @@ graph TD
     Service -->|Commit| UoW
 ```
 
-### 🛠️ Technical DecisionsChoiceTechnologyRationale
+### 🛠️ Technical Decisions
 
 | Choice | Technology | Rationale  |
 |------------|------------|---------|
@@ -58,7 +58,7 @@ graph TD
 * **DocumentCollection.cs:** Implements the Unit of Work pattern, coordinating transactions across multiple repositories to ensure "All or Nothing" operations.
 
 [!TIP]
-Architect's Insight: Always treat `IMongoClient` as a singleton. In this implementation, the `MongoDbContext` is registered with a scope, but it holds a reference to a `MongoClient` that should be long-lived. Re-instantiating the client on every request will exhaust your connection pool and cripple performance.
+**Architect's Insight:** Always treat `IMongoClient` as a singleton. In this implementation, the `MongoDbContext` is registered with a scope, but it holds a reference to a `MongoClient` that should be long-lived. Re-instantiating the client on every request will exhaust your connection pool and cripple performance.
 
 ## 🚦 4. Verification Guide
 

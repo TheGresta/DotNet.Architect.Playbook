@@ -1,5 +1,5 @@
-@Playbook.Persistence.MongoDB_HostAddress = http://localhost:5231
-@controller = ExceptionDocument
+@baseUrl = http://localhost:5231
+@controller = ExceptionMessageDocument
 @id = 00000000-0000-0000-0000-000000000001
 
 

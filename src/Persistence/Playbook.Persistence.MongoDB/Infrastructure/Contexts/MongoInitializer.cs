@@ -11,7 +11,7 @@ namespace Playbook.Persistence.MongoDB.Infrastructure.Contexts;
 /// </summary>
 internal static class MongoInitializer
 {
-    private static bool _initialized = false;
+    private static volatile bool _initialized = false;
     private static readonly object _lock = new();
 
     /// <summary>
