@@ -12,10 +12,10 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: 📦 Restore Dependencies
+        # Essential: Analyzers need to resolve types to validate naming/imports correctly
+        run: dotnet restore
+
       - name: 🔎 Verify Naming and Analyzers
-        # We target specific IDs to ignore the "shitty" formatting/import errors:
-        # IDE1006: Naming Styles (Interfaces with I, private fields with _)
-        # CA1822: Mark members as static
-        # CA1823: Avoid unused private fields
-        run: |
-          dotnet format --verify-no-changes --no-restore --severity error --diagnostics IDE1006 CA1822 CA1823
+        # We check all rules, but your .editorconfig (below) silences the ones you hate
+        run: dotnet format --verify-no-changes --severity error
