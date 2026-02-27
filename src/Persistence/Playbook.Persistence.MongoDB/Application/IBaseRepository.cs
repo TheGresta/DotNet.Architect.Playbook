@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-
 using Playbook.Persistence.MongoDB.Domain;
 
 namespace Playbook.Persistence.MongoDB.Application;
