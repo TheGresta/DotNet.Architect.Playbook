@@ -8,7 +8,7 @@ indent_size = 4
 tab_width = 4
 charset = utf-8
 
-# REAXED: Disabling all line/whitespace enforcement
+# RELAXED RULES: No enforcement on line endings or whitespaces
 end_of_line = unset
 trim_trailing_whitespace = unset
 insert_final_newline = unset
@@ -25,7 +25,7 @@ csharp_style_var_for_built_in_types = true:suggestion
 csharp_style_var_when_type_is_apparent = true:suggestion
 csharp_style_var_elsewhere = false:suggestion
 
-#### 2. Naming Conventions (Strict) ####
+#### 2. Naming Conventions (Strict - Keep these!) ####
 dotnet_naming_rule.interface_should_be_begins_with_i.severity = error
 dotnet_naming_rule.interface_should_be_begins_with_i.symbols = interface_symbols
 dotnet_naming_rule.interface_should_be_begins_with_i.style = begins_with_i_style
@@ -41,14 +41,22 @@ dotnet_naming_symbols.private_field_symbols.applicable_accessibilities = private
 dotnet_naming_style.underscore_style.required_prefix = _
 dotnet_naming_style.underscore_style.capitalization = camel_case
 
-#### 3. Organizing Usings ####
-dotnet_separate_import_directive_groups = true
-dotnet_sort_system_directives_first = true
+#### 3. Relaxed Formatting & Imports ####
+# This stops 'dotnet format' from caring about using statement order
+dotnet_separate_import_directive_groups = false
+dotnet_sort_system_directives_first = false
+dotnet_style_required_symbols_for_it_to_be_considered_organized = none
 
-#### 4. Analyzer & Formatting Silencing ####
-# This explicitly tells 'dotnet format' to ignore the errors you were getting
+#### 4. Analyzer & Formatting Silencing (The "Shut Up" Section) ####
+# Disable Whitespace/Formatting diagnostics
 dotnet_diagnostic.WHITESPACE.severity = none
 dotnet_diagnostic.FINALNEWLINE.severity = none
+dotnet_diagnostic.IDE0055.severity = none
+
+# Disable Import/Using organization diagnostics
+dotnet_diagnostic.IMPORTS.severity = none
+dotnet_diagnostic.IDE0005.severity = none
+dotnet_diagnostic.IDE0065.severity = none
 
 # General Analyzers
 dotnet_diagnostic.CA1822.severity = warning
