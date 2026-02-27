@@ -31,9 +31,10 @@ jobs:
           fi
 
       - name: 🔗 Check for Linked Issue
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
-          PR_BODY="${{ github.event.pull_request.body }}"
-          # Look for "Closes #123" or "Fixes #123" case-insensitive
+          # The variable is now safely stored in the environment
           if [[ ! "$PR_BODY" =~ [Cc]loses\ #[0-9]+ ]] && [[ ! "$PR_BODY" =~ [Ff]ixes\ #[0-9]+ ]]; then
             echo "❌ Error: You must link an issue in the description (e.g., 'Closes #123')."
             exit 1
