@@ -6,9 +6,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: 🏗️ Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: 🔎 Verify Formatting
-        run: dotnet format --verify-no-changes --verbosity diagnostic
+
+      - name: 🔎 Verify Style & Naming
+        # --no-restore: Speeds up the check since we don't need a full rebuild
+        # style: This ONLY checks rules in .editorconfig (Naming, etc.)
+        # analyzers: This checks compiler rules (CA1822, etc.)
+        # --severity error: Only fails if 'error' level rules are broken
+        run: |
+          dotnet format style --verify-no-changes --severity error --verbosity normal
+          dotnet format analyzers --verify-no-changes --severity error --verbosity normal
