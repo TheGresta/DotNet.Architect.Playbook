@@ -1,63 +1,55 @@
 # Top-most EditorConfig file
 root = true
 
-# Global Settings - Indent and Charset only
 [*]
 indent_style = space
 indent_size = 4
 tab_width = 4
 charset = utf-8
-
-# RELAXED RULES: No enforcement on line endings or whitespaces
 end_of_line = unset
 trim_trailing_whitespace = unset
 insert_final_newline = unset
 
 [*.cs]
-#### 1. Language Rules (Modern C#) ####
+#### 1. Language Rules ####
 dotnet_style_qualification_for_field = false:silent
 dotnet_style_qualification_for_property = false:silent
 dotnet_style_qualification_for_method = false:silent
 dotnet_style_qualification_for_event = false:silent
 
-dotnet_style_predefined_type_for_locals_parameters_extract_method = true:suggestion
-csharp_style_var_for_built_in_types = true:suggestion
-csharp_style_var_when_type_is_apparent = true:suggestion
-csharp_style_var_elsewhere = false:suggestion
-
-#### 2. Naming Conventions (Strict - Keep these!) ####
+#### 2. Naming Conventions (STRICT) ####
 dotnet_naming_rule.interface_should_be_begins_with_i.severity = error
 dotnet_naming_rule.interface_should_be_begins_with_i.symbols = interface_symbols
+dotnet_naming_rule.interface_symbols.applicable_kinds = interface
 dotnet_naming_rule.interface_should_be_begins_with_i.style = begins_with_i_style
-dotnet_naming_symbols.interface_symbols.applicable_kinds = interface
 dotnet_naming_style.begins_with_i_style.required_prefix = I
 dotnet_naming_style.begins_with_i_style.capitalization = pascal_case
 
 dotnet_naming_rule.private_fields_should_be_underscore.severity = error
 dotnet_naming_rule.private_fields_should_be_underscore.symbols = private_field_symbols
-dotnet_naming_rule.private_fields_should_be_underscore.style = underscore_style
 dotnet_naming_symbols.private_field_symbols.applicable_kinds = field
 dotnet_naming_symbols.private_field_symbols.applicable_accessibilities = private
+dotnet_naming_rule.private_fields_should_be_underscore.style = underscore_style
 dotnet_naming_style.underscore_style.required_prefix = _
 dotnet_naming_style.underscore_style.capitalization = camel_case
 
-#### 3. Relaxed Formatting & Imports ####
-# This stops 'dotnet format' from caring about using statement order
-dotnet_separate_import_directive_groups = false
+#### 3. Import/Using Organization (THE FIX) ####
+# Disable the engine's desire to sort or group imports
 dotnet_sort_system_directives_first = false
-dotnet_style_required_symbols_for_it_to_be_considered_organized = none
+dotnet_separate_import_directive_groups = false
+# This prevents 'dotnet format' from seeing "unorganized" imports as a change
+file_header_template = unset
 
-#### 4. Analyzer & Formatting Silencing (The "Shut Up" Section) ####
-# Disable Whitespace/Formatting diagnostics
-dotnet_diagnostic.WHITESPACE.severity = none
-dotnet_diagnostic.FINALNEWLINE.severity = none
+#### 4. Diagnostic Silencing ####
+# IDE0055 is the primary "Fix Formatting" rule - setting to none ignores whitespace/tabs
 dotnet_diagnostic.IDE0055.severity = none
+dotnet_diagnostic.WHITESPACE.severity = none
 
-# Disable Import/Using organization diagnostics
-dotnet_diagnostic.IMPORTS.severity = none
+# These three silence the "Fix Imports" errors you were seeing
 dotnet_diagnostic.IDE0005.severity = none
 dotnet_diagnostic.IDE0065.severity = none
+dotnet_diagnostic.IMPORTS.severity = none
 
-# General Analyzers
+# Custom severity for your specific needs
 dotnet_diagnostic.CA1822.severity = warning
 dotnet_diagnostic.CA1823.severity = error
