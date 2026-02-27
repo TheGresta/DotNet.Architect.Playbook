@@ -1,0 +1,15 @@
+# Handle line endings automatically for files detected as text 
+# and leave binary files alone.
+* text=auto eol=lf
+
+# Explicitly declare code files to always use LF
+*.cs text eol=lf
+*.csproj text eol=lf
+*.sln text eol=lf
+*.config text eol=lf
+*.editorconfig text eol=lf
+*.json text eol=lf
+
+# Standardize web/doc files
+*.md text eol=lf
+*.yml text eol=lf
