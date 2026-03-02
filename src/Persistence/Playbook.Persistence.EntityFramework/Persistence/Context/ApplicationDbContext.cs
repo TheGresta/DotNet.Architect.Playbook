@@ -10,7 +10,7 @@ namespace Playbook.Persistence.EntityFramework.Persistence.Context;
 
 internal class ApplicationDbContext(
     DbContextOptions<ApplicationDbContext> options,
-    //IAesEncryptionService aesEncryptionService,
+    IAesEncryptionService aesEncryptionService,
     IOptions<DbOptions> dbOptions) : DbContext(options)
 {
     private readonly DbOptions _dbOptions = dbOptions.Value;
@@ -28,7 +28,7 @@ internal class ApplicationDbContext(
 
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
-        //SetEncryption(modelBuilder);
+        SetEncryption(modelBuilder);
     }
 
     public override int SaveChanges()
@@ -43,24 +43,24 @@ internal class ApplicationDbContext(
         return await base.SaveChangesAsync(cancellationToken);
     }
 
-    //private void SetEncryption(ModelBuilder modelBuilder)
-    //{
-    //    if (!_dbOptions.EncryptionEnabled) return;
+    private void SetEncryption(ModelBuilder modelBuilder)
+    {
+        if (!_dbOptions.EncryptionEnabled) return;
 
-    //    var converter = new AesEncryptedConverter(aesEncryptionService);
+        var converter = new AesEncryptedConverter(aesEncryptionService);
 
-    //    foreach (var entityType in modelBuilder.Model.GetEntityTypes())
-    //    {
-    //        var properties = entityType.GetProperties()
-    //            .Where(p => p.ClrType == typeof(string) &&
-    //                        p.FindAnnotation(PropertyBuilderExtensions.EncryptionAnnotation) != null);
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            var properties = entityType.GetProperties()
+                .Where(p => p.ClrType == typeof(string) &&
+                            p.FindAnnotation(PropertyBuilderExtensions.EncryptionAnnotation) != null);
 
-    //        foreach (var property in properties)
-    //        {
-    //            property.SetValueConverter(converter);
-    //        }
-    //    }
-    //}
+            foreach (var property in properties)
+            {
+                property.SetValueConverter(converter);
+            }
+        }
+    }
 
     private void SetAuditableProperties()
     {

@@ -13,7 +13,7 @@ public static class PersistenceServiceRegistiration
     /// <returns>The modified collection of services.</returns>
     public static IServiceCollection AddPersistenceServices(this IServiceCollection services)
     {
-        //services.AddSingleton<IAesEncryptionService, AesEncryptionService>();
+        services.AddSingleton<IAesEncryptionService, AesEncryptionService>();
 
         services.AddDbContext<ApplicationDbContext>();
 

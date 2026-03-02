@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Playbook.Persistence.EntityFramework.Application;
 using Playbook.Persistence.EntityFramework.Application.Repositories;
 using Playbook.Persistence.EntityFramework.Persistence.Context;
+using Playbook.Persistence.EntityFramework.Persistence.Repositories;
 
 namespace Playbook.Persistence.EntityFramework.Persistence;
 
@@ -10,17 +11,40 @@ internal sealed class UnitOfWork(
     ApplicationDbContext context,
     IServiceProvider serviceProvider) : IUnitOfWork, IAsyncDisposable, IDisposable
 {
-    private readonly Dictionary<Type, object> _cache = [];
+    private readonly Dictionary<Type, object> _repositories = [];
     private IDbContextTransaction? _currentTransaction;
     private bool _disposed;
 
     #region Repositories
 
-    public IUserRepository UserRepository => GetRepository<IUserRepository>();
+    public IUserRepository UserRepository => Repository<UserRepository>();
 
-    private T GetRepository<T>() where T : class
-        => (T)(_cache.GetValueOrDefault(typeof(T))
-           ?? (_cache[typeof(T)] = serviceProvider.GetRequiredService<T>()));
+    private TRepository Repository<TRepository>() where TRepository : class
+    {
+        var type = typeof(TRepository);
+
+        if (!_repositories.ContainsKey(type))
+        {
+            // 1. Check if the DI container already has this registered
+            var service = serviceProvider.GetService<TRepository>();
+
+            if (service != null)
+            {
+                _repositories[type] = service;
+            }
+            else
+            {
+                // 2. Fallback: Manual instantiation if not in DI
+                // Note: This requires the repository to have a constructor that accepts the context
+                var instance = Activator.CreateInstance(type, context)
+                    ?? throw new InvalidOperationException($"Could not create instance of {type.Name}");
+
+                _repositories[type] = instance;
+            }
+        }
+
+        return (TRepository)_repositories[type];
+    }
 
     #endregion
 

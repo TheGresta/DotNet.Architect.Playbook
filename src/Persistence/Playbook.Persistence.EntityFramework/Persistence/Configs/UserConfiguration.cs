@@ -22,7 +22,7 @@ internal class UserConfiguration : AuditableEntityConfig<UserEntity>
 
         builder.Property(x => x.Email)
                .HasMaxLength(255)
-               //.Encrypt()
+               .Encrypt()
                .IsRequired();
     }
 }

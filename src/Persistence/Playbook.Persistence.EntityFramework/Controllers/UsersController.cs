@@ -13,6 +13,7 @@ public class UsersController(IUnitOfWork uow) : ControllerBase
     public async Task<IActionResult> GetUser(Guid id, CancellationToken ct)
     {
         // Notice: uow.UserRepository is strongly typed!
+
         var user = await uow.UserRepository.FindOneAsNoTrackingAsync(
             predicate: u => u.Id == id,
             cancellationToken: ct);
