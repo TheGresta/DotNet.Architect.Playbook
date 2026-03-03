@@ -21,6 +21,7 @@
 ## 🏗️ 2. Design & Strategy
 
 ### 📊 System Visualization
+
 ```mermaid
 graph TD
     UI[Application/Service Layer] --> UoW[IUnitOfWork]
@@ -44,6 +45,7 @@ graph TD
 ## 💻 3. Implementation Blueprint
 
 ### 📂 Key Artifacts
+
 * `IUnitOfWork.cs`: The orchestrator of transactions. It ensures that multiple repository operations succeed or fail as a single atomic unit.
 * `AuditableEntityInterceptor.cs`: A middleman that automatically injects `CreatedAt` and `CreatedBy` metadata whenever `SaveChanges` is called.
 * `PropertyBuilderExtensions.cs`: Contains the `.Encrypt()` fluent API, allowing developers to flag sensitive properties for automatic AES encryption during the configuration phase.
@@ -72,10 +74,13 @@ docker-compose up
 
 *Every architectural choice is a compromise.*
 
-* ✅ **Strengths:** * **Developer Ergonomics:** Auditing and Encryption are "set and forget.
+* ✅ **Strengths:**
+    * **Developer Ergonomics:** Auditing and Encryption are "set and forget.
     * **Security:** Transparent encryption ensures sensitive data (PII) is never stored in plain text.
     * **Testability:** The Repository interfaces allow for easy mocking of the data layer.
-* ❌ **Weaknesses:** * **Performance Overhead:** AES encryption/decryption adds a small CPU cost per row; global filters can occasionally impact complex query execution plans.
+* ❌ **Weaknesses:** 
+    * **Performance Overhead:** AES encryption/decryption adds a small CPU cost per row; global filters can occasionally impact complex query execution plans.
     * **Abstraction Complexity:** For very simple CRUD apps, the Repository/UoW pattern might be considered "over-engineering.
-* 🔄 **Alternatives:** * **Dapper:** Use for high-performance Read-Models or complex reporting queries where EF Core's overhead is undesirable.
+* 🔄 **Alternatives:**
+    * **Dapper:** Use for high-performance Read-Models or complex reporting queries where EF Core's overhead is undesirable.
     * **Always Encrypted (SQL Server)**: A database-level alternative to application-side AES encryption, though it requires more infrastructure configuration.

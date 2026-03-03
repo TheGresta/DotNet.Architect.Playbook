@@ -3,20 +3,16 @@ using Microsoft.Extensions.Options;
 using Playbook.Persistence.EntityFramework.Application;
 using Playbook.Persistence.EntityFramework.Persistence.Context;
 using Playbook.Persistence.EntityFramework.Persistence.Encryption;
-using Playbook.Persistence.EntityFramework.Persistence.Interseptors;
+using Playbook.Persistence.EntityFramework.Persistence.Interceptors;
 using Playbook.Persistence.EntityFramework.Persistence.Options;
 
 namespace Playbook.Persistence.EntityFramework.Persistence;
-
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 /// <summary>
 /// Provides extension methods for <see cref="IServiceCollection"/> to centralize the registration 
 /// of persistence-related services and database configurations.
 /// </summary>
-public static class PersistenceServiceRegistiration
+public static class PersistenceServiceRegistration
 {
     /// <summary>
     /// Registers the database context, unit of work, encryption services, and interceptors 
@@ -57,7 +53,13 @@ public static class PersistenceServiceRegistiration
             var dbOptions = sp.GetRequiredService<IOptions<DbOptions>>().Value;
             var interceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
 
-            options.UseNpgsql(dbOptions.ConnectionString)
+            options.UseNpgsql(dbOptions.ConnectionString, npgsqlOptions =>
+                   {
+                       npgsqlOptions.EnableRetryOnFailure(
+                           maxRetryCount: 3,
+                           maxRetryDelay: TimeSpan.FromSeconds(30),
+                           errorCodesToAdd: null);
+                   })
                    .AddInterceptors(interceptor);
         });
 

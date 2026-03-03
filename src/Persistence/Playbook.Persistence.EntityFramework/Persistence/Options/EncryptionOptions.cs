@@ -1,4 +1,6 @@
-﻿namespace Playbook.Persistence.EntityFramework.Persistence.Options;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Playbook.Persistence.EntityFramework.Persistence.Options;
 
 /// <summary>
 /// Represents the encryption options for the .NET 8.0 EF Core project.
@@ -8,5 +10,6 @@ public class EncryptionOptions
     /// <summary>
     /// Gets or sets the encryption key.
     /// </summary>
+    [Required]
     public string Key { get; set; } = string.Empty;
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc;
 using Playbook.Persistence.EntityFramework.Application;
 using Playbook.Persistence.EntityFramework.Domain;
 
@@ -42,10 +43,9 @@ public class UsersController(IUnitOfWork uow) : ControllerBase
             await uow.CommitTransactionAsync(ct);
             return CreatedAtAction(nameof(GetUser), new { id = user.Id }, user);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            await uow.RollbackTransactionAsync(ct);
-            return BadRequest("Could not create user. Transaction rolled back.");
+            return BadRequest($"Could not create user: {ex.Message}");
         }
     }
 
@@ -66,7 +66,6 @@ public class UsersController(IUnitOfWork uow) : ControllerBase
     public async Task<IActionResult> GetPaged([FromQuery] int index = 0, [FromQuery] int size = 10, CancellationToken ct = default)
     {
         var pagedUsers = await uow.UserRepository.FindAllByPaginateAsync(
-            predicate: u => u.IsActive,
             orderBy: q => q.OrderBy(u => u.Surname),
             index: index,
             size: size,
@@ -76,4 +75,7 @@ public class UsersController(IUnitOfWork uow) : ControllerBase
     }
 }
 
-public record CreateUserRequest(string Name, string Surname, string Email);
+public record CreateUserRequest(
+    [Required, MaxLength(100)] string Name,
+    [Required, MaxLength(100)] string Surname,
+    [Required, EmailAddress, MaxLength(255)] string Email);

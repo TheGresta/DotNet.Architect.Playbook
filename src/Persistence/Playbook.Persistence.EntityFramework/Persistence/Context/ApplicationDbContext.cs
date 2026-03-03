@@ -1,12 +1,11 @@
 ﻿using Playbook.Persistence.EntityFramework.Persistence.Encryption;
 using Playbook.Persistence.EntityFramework.Persistence.Extensions;
 using Playbook.Persistence.EntityFramework.Persistence.Options;
-
-namespace Playbook.Persistence.EntityFramework.Persistence.Context;
-
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+
+namespace Playbook.Persistence.EntityFramework.Persistence.Context;
 
 /// <summary>
 /// The primary database context for the application, responsible for configuring entity mappings,

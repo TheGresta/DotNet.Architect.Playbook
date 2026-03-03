@@ -52,7 +52,7 @@ internal sealed class UnitOfWork(
     {
         var type = typeof(TRepository);
 
-        if (!_repositories.ContainsKey(type))
+        if (!_repositories.TryGetValue(type, out var cached))
         {
             var service = serviceProvider.GetService<TRepository>();
 
@@ -67,9 +67,11 @@ internal sealed class UnitOfWork(
 
                 _repositories[type] = instance;
             }
+
+            return (TRepository)_repositories[type];
         }
 
-        return (TRepository)_repositories[type];
+        return (TRepository)cached;
     }
 
     #endregion

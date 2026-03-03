@@ -17,7 +17,10 @@ builder.Services.AddPersistenceServices();
 
 //Configurations
 builder.Services.Configure<DbOptions>(builder.Configuration.GetSection("PostgreSql"));
-builder.Services.Configure<EncryptionOptions>(builder.Configuration.GetSection("Encryption"));
+builder.Services.AddOptions<EncryptionOptions>()
+    .Bind(builder.Configuration.GetSection("Encryption"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 var app = builder.Build();
 

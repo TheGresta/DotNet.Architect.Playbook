@@ -98,8 +98,8 @@ internal class BaseRepository<TEntity>(ApplicationDbContext context) : IBaseRepo
         // Projections ignore the change tracker as the result is typically a DTO or a primitive.
         var query = ApplyQuery(predicate, orderBy, enableTracking: false);
 
-        if (skip.HasValue) query = query.Skip(skip.Value);
-        if (takeTop.HasValue) query = query.Take(takeTop.Value);
+        if (skip.HasValue && skip.Value > default(int)) query = query.Skip(skip.Value);
+        if (takeTop.HasValue && takeTop.Value > default(int)) query = query.Take(takeTop.Value);
 
         return await query.Select(selector).ToListAsync(cancellationToken);
     }

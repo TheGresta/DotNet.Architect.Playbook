@@ -4,7 +4,7 @@ using Microsoft.Extensions.Options;
 using Playbook.Persistence.EntityFramework.Domain.Base;
 using Playbook.Persistence.EntityFramework.Persistence.Options;
 
-namespace Playbook.Persistence.EntityFramework.Persistence.Interseptors;
+namespace Playbook.Persistence.EntityFramework.Persistence.Interceptors;
 
 /// <summary>
 /// Intercepts database save operations to automatically populate audit metadata for 

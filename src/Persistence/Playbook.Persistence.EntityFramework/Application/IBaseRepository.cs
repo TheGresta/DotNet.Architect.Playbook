@@ -3,8 +3,6 @@ using Playbook.Persistence.EntityFramework.Domain.Base;
 
 namespace Playbook.Persistence.EntityFramework.Application;
 
-using System.Linq.Expressions;
-
 /// <summary>
 /// Defines the generic data access contract for entities of type <typeparamref name="TEntity"/>.
 /// </summary>
@@ -116,7 +114,7 @@ public interface IBaseRepository<TEntity> where TEntity : Entity
 
     #endregion
 
-    #region COMMANDS
+    #region EXISTENCE CHECKS
 
     /// <summary>
     /// Asynchronously determines whether any entity exists that matches the specified predicate.
@@ -125,6 +123,10 @@ public interface IBaseRepository<TEntity> where TEntity : Entity
     /// <param name="cancellationToken">A <see cref="CancellationToken"/> to observe.</param>
     /// <returns><see langword="true"/> if at least one entity matches; otherwise, <see langword="false"/>.</returns>
     Task<bool> AnyAsync(Expression<Func<TEntity, bool>>? predicate = null, CancellationToken cancellationToken = default);
+
+    #endregion
+
+    #region COMMANDS
 
     /// <summary>
     /// Begins tracking the given entity in the <see cref="F:Microsoft.EntityFrameworkCore.EntityState.Added"/> state.

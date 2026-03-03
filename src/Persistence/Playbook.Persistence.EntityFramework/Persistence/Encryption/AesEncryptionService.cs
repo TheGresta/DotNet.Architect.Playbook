@@ -15,8 +15,22 @@ namespace Playbook.Persistence.EntityFramework.Persistence.Encryption;
 /// </remarks>
 internal class AesEncryptionService(IOptions<EncryptionOptions> encryptionOptions, IOptions<DbOptions> dbOptions) : IAesEncryptionService
 {
-    private readonly byte[] _key = Encoding.UTF8.GetBytes(encryptionOptions.Value.Key);
+    private readonly byte[] _key = ValidateAndGetKey(encryptionOptions.Value.Key);
     private readonly bool _encryptionEnabled = dbOptions.Value.EncryptionEnabled;
+
+    private static byte[] ValidateAndGetKey(string key)
+    {
+        if (string.IsNullOrEmpty(key))
+            throw new ArgumentException("Encryption key cannot be null or empty.", nameof(key));
+        
+        var keyBytes = Encoding.UTF8.GetBytes(key);
+        if (keyBytes.Length != 16 && keyBytes.Length != 24 && keyBytes.Length != 32)
+            throw new ArgumentException(
+                $"Encryption key must be 16, 24, or 32 bytes for AES. Current length: {keyBytes.Length} bytes.",
+                nameof(key));
+        
+        return keyBytes;
+    }
 
     /// <summary>
     /// Encrypts a plain-text string into a Base64-encoded ciphertext.
@@ -82,6 +96,10 @@ internal class AesEncryptionService(IOptions<EncryptionOptions> encryptionOption
         if (!_encryptionEnabled || string.IsNullOrWhiteSpace(cipherText)) return cipherText;
 
         var fullCipher = Convert.FromBase64String(cipherText);
+
+        // Minimum length: 16-byte IV + at least 1 byte of ciphertext
+        if (fullCipher.Length <= 16)
+            throw new ArgumentException("Invalid ciphertext: data too short.", nameof(cipherText));
 
         using var aes = Aes.Create();
         aes.Key = _key;

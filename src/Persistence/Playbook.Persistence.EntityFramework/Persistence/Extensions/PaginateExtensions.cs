@@ -36,15 +36,19 @@ internal static class PaginateExtensions
         index = Math.Max(0, index);
 
         // Guard against zero/negative size or "scraping" attacks by capping size at 100
-        size = Math.Max(1, Math.Min(size, 100));
+        size = Math.Clamp(size, 1, 100);
 
         int count = await source.CountAsync(cancellationToken);
 
         if (count == 0)
             return new Paginate<T>([], 0, index, size);
 
+        long skipLong = (long)index * size;
+        if (skipLong > int.MaxValue)
+            return new Paginate<T>([], count, index, size);
+
         List<T> items = await source
-            .Skip(index * size)
+            .Skip((int)skipLong)
             .Take(size)
             .ToListAsync(cancellationToken);
 
@@ -65,10 +69,17 @@ internal static class PaginateExtensions
     /// </remarks>
     public static Paginate<T> ToPaginate<T>(this IEnumerable<T> source, int index, int size)
     {
+        index = Math.Max(0, index);
+        size = Math.Clamp(size, 1, 100);
+
         var collection = source as ICollection<T>;
         int count = collection?.Count ?? source.Count();
 
-        var items = source.Skip(index * size).Take(size).ToList();
+        long skipLong = (long)index * size;
+        if (skipLong > int.MaxValue)
+            return new Paginate<T>([], count, index, size);
+
+        var items = source.Skip((int)skipLong).Take(size).ToList();
 
         return new Paginate<T>(items, count, index, size);
     }
