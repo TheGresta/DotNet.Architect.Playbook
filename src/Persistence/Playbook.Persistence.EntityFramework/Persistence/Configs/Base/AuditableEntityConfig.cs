@@ -7,8 +7,6 @@ internal abstract class AuditableEntityConfig<TEntity> : EntityConfig<TEntity> w
 {
     protected override void ConfigureEntity(EntityTypeBuilder<TEntity> builder)
     {
-        Configure(builder);
-
         builder.Property(x => x.CreatedBy)
                .HasMaxLength(100)
                .IsRequired();

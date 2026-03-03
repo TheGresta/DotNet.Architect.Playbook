@@ -1,6 +1,10 @@
-﻿using Playbook.Persistence.EntityFramework.Application;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Playbook.Persistence.EntityFramework.Application;
 using Playbook.Persistence.EntityFramework.Persistence.Context;
 using Playbook.Persistence.EntityFramework.Persistence.Encryption;
+using Playbook.Persistence.EntityFramework.Persistence.Interseptors;
+using Playbook.Persistence.EntityFramework.Persistence.Options;
 
 namespace Playbook.Persistence.EntityFramework.Persistence;
 
@@ -15,7 +19,16 @@ public static class PersistenceServiceRegistiration
     {
         services.AddSingleton<IAesEncryptionService, AesEncryptionService>();
 
-        services.AddDbContext<ApplicationDbContext>();
+        services.AddScoped<AuditableEntityInterceptor>();
+
+        services.AddDbContext<ApplicationDbContext>((sp, options) =>
+        {
+            var dbOptions = sp.GetRequiredService<IOptions<DbOptions>>().Value;
+            var interceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
+
+            options.UseNpgsql(dbOptions.ConnectionString)
+                   .AddInterceptors(interceptor);
+        });
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 

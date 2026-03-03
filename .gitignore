@@ -417,4 +417,15 @@ FodyWeavers.xsd
 *.msm
 *.msp
 
-appsettings.Development.json
+# Appsetting files
+appsettings.*.json
+
+# EF Core User Secrets and runtime artifacts
+*.db-shm
+*.db-wal
+
+# If you use T4 templates for scaffolding
+*.generated.cs
+
+# EF Core Migrations
+Migrations/

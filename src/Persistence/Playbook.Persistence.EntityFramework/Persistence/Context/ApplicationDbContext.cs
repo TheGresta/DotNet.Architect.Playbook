@@ -1,7 +1,6 @@
 ﻿using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
-using Playbook.Persistence.EntityFramework.Domain.Base;
 using Playbook.Persistence.EntityFramework.Persistence.Encryption;
 using Playbook.Persistence.EntityFramework.Persistence.Extensions;
 using Playbook.Persistence.EntityFramework.Persistence.Options;
@@ -15,13 +14,6 @@ internal class ApplicationDbContext(
 {
     private readonly DbOptions _dbOptions = dbOptions.Value;
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        optionsBuilder.UseNpgsql(_dbOptions.ConnectionString);
-
-        base.OnConfiguring(optionsBuilder);
-    }
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -29,18 +21,6 @@ internal class ApplicationDbContext(
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
         SetEncryption(modelBuilder);
-    }
-
-    public override int SaveChanges()
-    {
-        SetAuditableProperties();
-        return base.SaveChanges();
-    }
-
-    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken)
-    {
-        SetAuditableProperties();
-        return await base.SaveChangesAsync(cancellationToken);
     }
 
     private void SetEncryption(ModelBuilder modelBuilder)
@@ -58,33 +38,6 @@ internal class ApplicationDbContext(
             foreach (var property in properties)
             {
                 property.SetValueConverter(converter);
-            }
-        }
-    }
-
-    private void SetAuditableProperties()
-    {
-        var entries = ChangeTracker.Entries<AuditableEntity>();
-        var transactionDate = DateTime.UtcNow;
-
-        foreach (var entry in entries)
-        {
-            switch (entry.State)
-            {
-                case EntityState.Added:
-                    entry.Entity.CreatedAt = transactionDate;
-                    entry.Entity.CreatedBy = _dbOptions.ApplicationName;
-                    entry.Entity.IsActive = true;
-                    break;
-
-                case EntityState.Modified:
-                    entry.Entity.UpdatedAt = transactionDate;
-                    entry.Entity.UpdatedBy = _dbOptions.ApplicationName;
-
-                    // Prevent accidental modification of Created fields
-                    entry.Property(x => x.CreatedAt).IsModified = false;
-                    entry.Property(x => x.CreatedBy).IsModified = false;
-                    break;
             }
         }
     }
