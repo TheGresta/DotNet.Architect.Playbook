@@ -1,0 +1,34 @@
+@base_url = http://localhost:7292
+@api_url = {{base_url}}/api/Users
+
+### 1. Create a New User (POST)
+# This uses the CreateUserRequest record structure
+POST {{api_url}}
+Content-Type: application/json
+
+{
+  "name": "Jane",
+  "surname": "Doe",
+  "email": "jane.doe@example.com"
+}
+
+###
+
+### 2. Get User by ID (GET)
+# Replace the GUID below with a real ID from your database
+@userId = 00000000-0000-0000-0000-000000000000
+GET {{api_url}}/{{userId}}
+Accept: application/json
+
+###
+
+### 3. Get Selected Emails (GET)
+GET {{api_url}}/emails
+Accept: application/json
+
+###
+
+### 4. Get Paged Users (GET)
+# Demonstrates query parameters for index and size
+GET {{api_url}}/paged?index=0&size=5
+Accept: application/json
