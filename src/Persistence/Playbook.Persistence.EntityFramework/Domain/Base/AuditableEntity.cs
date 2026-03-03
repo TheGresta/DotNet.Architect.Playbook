@@ -1,28 +1,31 @@
 ﻿namespace Playbook.Persistence.EntityFramework.Domain.Base;
 
 /// <summary>
-///  Represents an abstract class serving as the base for entities that track audit information 
-///  such as creation and modification timestamps along with the user responsible for the changes.
+/// Extends the <see cref="Entity"/> class to provide audit-trail capabilities, 
+/// including creation and modification metadata.
 /// </summary>
 public abstract class AuditableEntity : Entity
 {
     /// <summary>
-    /// Gets or sets the timestamp when the entity was created.
+    /// Gets or sets the date and time, in UTC, when the entity was first persisted.
     /// </summary>
     public DateTime CreatedAt { get; set; }
 
     /// <summary>
-    /// Gets or sets the user who created the entity.
+    /// Gets or sets the identifier (e.g., username or system ID) of the user who created the entity.
     /// </summary>
     public string CreatedBy { get; set; } = string.Empty;
 
     /// <summary>
-    /// Gets or sets the timestamp when the entity was last updated.
+    /// Gets or sets the date and time, in UTC, when the entity was last modified.
     /// </summary>
+    /// <value>
+    /// A <see cref="Nullable{DateTime}"/> representing the last update timestamp, or <see langword="null"/> if the entity has never been updated.
+    /// </value>
     public DateTime? UpdatedAt { get; set; }
 
     /// <summary>
-    /// Gets or sets the user who last updated the entity, if applicable.
+    /// Gets or sets the identifier of the user who last modified the entity.
     /// </summary>
     public string? UpdatedBy { get; set; }
 }

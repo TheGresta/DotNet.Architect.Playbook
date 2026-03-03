@@ -49,7 +49,19 @@ public class UsersController(IUnitOfWork uow) : ControllerBase
         }
     }
 
-    // 4. GET: Paged List (Demonstrating Pagination Extension)
+    // 4. GET: Selected List
+    [HttpGet("emails")]
+    public async Task<IActionResult> GetSelected(CancellationToken ct = default)
+    {
+        var pagedUsers = await uow.UserRepository.FindAllSelectedAsync(
+            selector: u => new { u.Id, u.Email},
+            orderBy: q => q.OrderBy(u => u.Id),
+            cancellationToken: ct);
+
+        return Ok(pagedUsers);
+    }
+
+    // 5. GET: Paged List (Demonstrating Pagination Extension)
     [HttpGet("paged")]
     public async Task<IActionResult> GetPaged([FromQuery] int index = 0, [FromQuery] int size = 10, CancellationToken ct = default)
     {

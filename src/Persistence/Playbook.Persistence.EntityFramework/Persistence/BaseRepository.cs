@@ -7,14 +7,26 @@ using Playbook.Persistence.EntityFramework.Persistence.Extensions;
 
 namespace Playbook.Persistence.EntityFramework.Persistence;
 
+/// <summary>
+/// Provides the standard Entity Framework Core implementation for data access operations.
+/// </summary>
+/// <typeparam name="TEntity">The type of the domain entity.</typeparam>
 internal class BaseRepository<TEntity>(ApplicationDbContext context) : IBaseRepository<TEntity>
     where TEntity : Entity
 {
+    /// <summary>
+    /// The underlying database context for this repository.
+    /// </summary>
     protected readonly ApplicationDbContext _context = context;
+
+    /// <summary>
+    /// The <see cref="DbSet{TEntity}"/> for the current entity type, used to perform CRUD operations.
+    /// </summary>
     protected readonly DbSet<TEntity> _dbSet = context.Set<TEntity>();
 
     #region Read Methods (Tracked)
 
+    /// <inheritdoc/>
     public async Task<TEntity?> FindOneAsync(
         Expression<Func<TEntity, bool>> predicate,
         Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy,
@@ -24,6 +36,7 @@ internal class BaseRepository<TEntity>(ApplicationDbContext context) : IBaseRepo
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    /// <inheritdoc/>
     public async Task<List<TEntity>> FindAllAsync(
         Expression<Func<TEntity, bool>>? predicate,
         Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy,
@@ -43,6 +56,7 @@ internal class BaseRepository<TEntity>(ApplicationDbContext context) : IBaseRepo
 
     #region Read Methods (AsNoTracking)
 
+    /// <inheritdoc/>
     public async Task<TEntity?> FindOneAsNoTrackingAsync(
         Expression<Func<TEntity, bool>> predicate,
         Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy,
@@ -52,6 +66,7 @@ internal class BaseRepository<TEntity>(ApplicationDbContext context) : IBaseRepo
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    /// <inheritdoc/>
     public async Task<List<TEntity>> FindAllAsNoTrackingAsync(
         Expression<Func<TEntity, bool>>? predicate,
         Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy,
@@ -71,6 +86,7 @@ internal class BaseRepository<TEntity>(ApplicationDbContext context) : IBaseRepo
 
     #region Projections & Pagination
 
+    /// <inheritdoc/>
     public async Task<List<TResult>> FindAllSelectedAsync<TResult>(
         Expression<Func<TEntity, TResult>> selector,
         Expression<Func<TEntity, bool>>? predicate,
@@ -79,7 +95,7 @@ internal class BaseRepository<TEntity>(ApplicationDbContext context) : IBaseRepo
         int? takeTop,
         CancellationToken cancellationToken)
     {
-        // Projections are naturally No-Tracking
+        // Projections ignore the change tracker as the result is typically a DTO or a primitive.
         var query = ApplyQuery(predicate, orderBy, enableTracking: false);
 
         if (skip.HasValue) query = query.Skip(skip.Value);
@@ -88,6 +104,7 @@ internal class BaseRepository<TEntity>(ApplicationDbContext context) : IBaseRepo
         return await query.Select(selector).ToListAsync(cancellationToken);
     }
 
+    /// <inheritdoc/>
     public async Task<Paginate<TEntity>> FindAllByPaginateAsync(
         Expression<Func<TEntity, bool>>? predicate,
         Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy,
@@ -104,6 +121,7 @@ internal class BaseRepository<TEntity>(ApplicationDbContext context) : IBaseRepo
 
     #region Commands
 
+    /// <inheritdoc/>
     public async Task<bool> AnyAsync(Expression<Func<TEntity, bool>>? predicate, CancellationToken cancellationToken)
     {
         return predicate == null
@@ -111,17 +129,26 @@ internal class BaseRepository<TEntity>(ApplicationDbContext context) : IBaseRepo
             : await _dbSet.AnyAsync(predicate, cancellationToken);
     }
 
+    /// <inheritdoc/>
     public void Add(TEntity entity) => _dbSet.Add(entity);
 
+    /// <inheritdoc/>
     public void Update(TEntity entity) => _dbSet.Update(entity);
 
+    /// <summary>
+    /// Performs a logical deletion by setting the <see cref="Entity.IsActive"/> flag to <see langword="false"/>.
+    /// </summary>
+    /// <param name="entity">The entity to soft-delete.</param>
+    /// <remarks>
+    /// This relies on the global query filter configured in the persistence layer to exclude the entity from future queries.
+    /// </remarks>
     public void Delete(TEntity entity)
     {
-        // Soft delete implementation
         entity.IsActive = false;
         Update(entity);
     }
 
+    /// <inheritdoc/>
     public void HardDelete(TEntity entity) => _dbSet.Remove(entity);
 
     #endregion
@@ -129,8 +156,13 @@ internal class BaseRepository<TEntity>(ApplicationDbContext context) : IBaseRepo
     #region Helpers
 
     /// <summary>
-    /// Centralized query builder to handle common logic for all read operations.
+    /// Constructs an <see cref="IQueryable{T}"/> based on the specified criteria, 
+    /// centralizing tracking and filtering logic.
     /// </summary>
+    /// <param name="predicate">Optional filter expression.</param>
+    /// <param name="orderBy">Optional sorting logic.</param>
+    /// <param name="enableTracking">Determines if the EF Core Change Tracker should monitor the results.</param>
+    /// <returns>A configured <see cref="IQueryable{TEntity}"/> ready for execution.</returns>
     private IQueryable<TEntity> ApplyQuery(
         Expression<Func<TEntity, bool>>? predicate = null,
         Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
