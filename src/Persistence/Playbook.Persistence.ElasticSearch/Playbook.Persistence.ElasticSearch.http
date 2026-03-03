@@ -1,0 +1,6 @@
+@Playbook.Persistence.ElasticSearch_HostAddress = http://localhost:5164
+
+GET {{Playbook.Persistence.ElasticSearch_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
