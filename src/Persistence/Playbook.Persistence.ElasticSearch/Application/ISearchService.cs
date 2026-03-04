@@ -2,22 +2,15 @@
 
 namespace Playbook.Persistence.ElasticSearch.Application;
 
-public interface ISearchService<TEntity> where TEntity : class
+public interface ISearchService<TEntity> where TEntity : BaseDocument
 {
-    /// <summary>
-    /// Direct retrieval by ID (The 'R' in CRUD)
-    /// </summary>
-    Task<TEntity?> GetAsync(string id, CancellationToken ct = default);
+    ValueTask<TEntity?> GetAsync(string id, CancellationToken ct = default);
 
-    /// <summary>
-    /// Index or Update a document
-    /// </summary>
-    Task<ElasticOperationResult> SaveAsync(TEntity entity, CancellationToken ct = default);
+    Task<SearchOperationResult> SaveAsync(TEntity entity, CancellationToken ct = default);
 
-    /// <summary>
-    /// Delete a document by ID
-    /// </summary>
-    Task<ElasticOperationResult> DeleteAsync(string id, CancellationToken ct = default);
+    Task<SearchOperationResult> BulkSaveAsync(IEnumerable<TEntity> entities, CancellationToken ct = default);
 
-    Task<SearchResult<TEntity>> QueryAsync(SearchQuery request, CancellationToken ct = default);
+    Task<SearchOperationResult> DeleteAsync(string id, CancellationToken ct = default);
+
+    Task<SearchPageResponse<TEntity>> QueryAsync(SearchQuery<TEntity> request, CancellationToken ct = default);
 }

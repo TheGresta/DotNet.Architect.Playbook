@@ -22,4 +22,5 @@ public record ElasticsearchOptions
     // Resilience Settings
     public int MaxRetries { get; init; } = 3;
     public bool SniffOnStartup { get; init; } = false;
+    public bool EnableDebugMode { get; init; } = false;
 }

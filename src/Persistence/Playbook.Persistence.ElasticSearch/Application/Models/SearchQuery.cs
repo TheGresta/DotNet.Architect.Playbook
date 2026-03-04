@@ -1,9 +1,14 @@
-﻿namespace Playbook.Persistence.ElasticSearch.Application.Models;
+﻿using System.Linq.Expressions;
 
-public record SearchQuery(
-    string? Term = null,
-    int Page = 1,
-    int PageSize = 10,
-    Dictionary<string, object>? Filters = null,
-    string? SortBy = null,
-    bool SortDescending = true);
+namespace Playbook.Persistence.ElasticSearch.Application.Models;
+
+public class SearchQuery<T> where T : BaseDocument
+{
+    public string? Term { get; set; }
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
+    public Expression<Func<T, object>>? SortByExpression { get; set; }
+    public bool SortDescending { get; set; }
+    public Dictionary<Expression<Func<T, object>>, object> Filters { get; set; } = [];
+    public int Skip => (Page - 1) * PageSize;
+}

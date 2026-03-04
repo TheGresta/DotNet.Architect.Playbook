@@ -1,133 +1,90 @@
 ﻿using System.Diagnostics;
 using Elastic.Clients.Elasticsearch;
-using Elastic.Clients.Elasticsearch.QueryDsl;
 using Elastic.Transport.Products.Elasticsearch;
 using Playbook.Persistence.ElasticSearch.Application;
 using Playbook.Persistence.ElasticSearch.Application.Models;
 
 namespace Playbook.Persistence.ElasticSearch.Persistence;
 
-public sealed class ElasticsearchService<TEntity>(
+public sealed class ElasticsearchService<T>(
     ElasticsearchClient client,
-    ILogger<ElasticsearchService<TEntity>> logger)
-    : ISearchService<TEntity> where TEntity : class
+    ILogger<ElasticsearchService<T>> logger) : ISearchService<T> where T : BaseDocument
 {
-    // Convention: Use a static readonly to avoid repeating calculation for every instance
-    private static readonly string DefaultIndex = typeof(TEntity).Name.ToLowerInvariant();
-
-    public async Task<ElasticOperationResult> SaveAsync(TEntity entity, CancellationToken ct = default)
+    private static readonly string _indexName = typeof(T).Name.ToLowerInvariant();
+    public async ValueTask<T?> GetAsync(string id, CancellationToken ct = default)
     {
-        var response = await client.IndexAsync(entity, i => i.Index(DefaultIndex), ct).ConfigureAwait(false);
+        var response = await client.GetAsync<T>(id, ct);
 
-        return response.IsValidResponse
-            ? ElasticOperationResult.Success()
-            : LogAndReturnFailure(response, "index");
+        if (response.IsSuccess()) return response.Source;
+
+        logger.LogWarning("Elasticsearch: Get failed for {Id}. Debug: {Reason}", id, response.DebugInformation);
+        return null;
     }
 
-    public async Task<TEntity?> GetAsync(string id, CancellationToken ct = default)
+    public async Task<SearchOperationResult> SaveAsync(T entity, CancellationToken ct = default)
     {
-        // Use Source directly to reduce overhead if the ID is missing
-        var response = await client.GetAsync<TEntity>(id, g => g.Index(DefaultIndex), ct).ConfigureAwait(false);
-        return response.Source;
+        var response = await client.IndexAsync(entity, ct);
+        return HandleResponse(response, "Indexing failed");
     }
 
-    public async Task<ElasticOperationResult> DeleteAsync(string id, CancellationToken ct = default)
+    public async Task<SearchOperationResult> BulkSaveAsync(IEnumerable<T> entities, CancellationToken ct = default)
     {
-        var response = await client.DeleteAsync<TEntity>(id, d => d.Index(DefaultIndex), ct).ConfigureAwait(false);
+        var bulkResponse = await client.BulkAsync(b => b
+            .Index(_indexName)
+            .IndexMany(entities)
+            .Refresh(Refresh.WaitFor), ct);
 
-        return response.IsValidResponse
-            ? ElasticOperationResult.Success()
-            : LogAndReturnFailure(response, "delete", id);
+        if (bulkResponse.IsSuccess()) return SearchOperationResult.Success();
+
+        var errorCount = bulkResponse.ItemsWithErrors.Count();
+        logger.LogError("Elasticsearch: Bulk indexing had {Count} errors. Debug: {Debug}", errorCount, bulkResponse.DebugInformation);
+        return SearchOperationResult.Failure($"Bulk operation failed with {errorCount} errors.");
     }
 
-    public async Task<SearchResult<TEntity>> QueryAsync(SearchQuery request, CancellationToken ct = default)
+    public async Task<SearchOperationResult> DeleteAsync(string id, CancellationToken ct = default)
+    {
+        var response = await client.DeleteAsync<T>(id, ct);
+        return HandleResponse(response, $"Delete failed for {id}");
+    }
+
+    public async Task<SearchPageResponse<T>> QueryAsync(SearchQuery<T> request, CancellationToken ct = default)
     {
         var timer = Stopwatch.StartNew();
 
-        var response = await client.SearchAsync<TEntity>(s => s
-            .Index(DefaultIndex)
-            .From((request.Page - 1) * request.PageSize)
+        var response = await client.SearchAsync<T>(s => s
+            .Index(_indexName)
+            .From(request.Skip)
             .Size(request.PageSize)
-            .Query(q => q
-                .Bool(b => b
-                    .Must(m => BuildTermQuery(m, request.Term))
-                    .Filter(f => BuildFilters(f, request.Filters))
-                )
-            )
-            .Sort(sort => BuildSort(sort, request)),
-            ct).ConfigureAwait(false);
+            .ApplyDynamicQuery(request.Filters, request.Term)
+            .ApplySort(request.SortByExpression, request.SortDescending)
+        , ct);
 
         timer.Stop();
 
-        if (!response.IsValidResponse)
+        if (!response.IsSuccess())
         {
-            logger.LogError("Search failed for {Index}: {Debug}", DefaultIndex, response.DebugInformation);
-            return new SearchResult<TEntity>(Array.Empty<TEntity>(), 0, timer.Elapsed);
+            logger.LogError("Elasticsearch: Query failed. {Error}", response.DebugInformation);
+            return new([], 0, request.Page, request.PageSize, timer.Elapsed);
         }
 
-        return new SearchResult<TEntity>(response.Documents, response.Total, timer.Elapsed);
-    }
-
-    private static void BuildTermQuery(QueryDescriptor<TEntity> q, string? term)
-    {
-        if (string.IsNullOrWhiteSpace(term))
-        {
-            q.MatchAll(new MatchAllQuery());
-            return;
-        }
-
-        // Optimization: Use MultiMatch but avoid "_all". 
-        // In a real system, you'd define "SearchableFields" on the entity.
-        q.MultiMatch(mm => mm
-            .Query(term)
-            .Type(TextQueryType.BestFields)
-            .Fuzziness(new Fuzziness("AUTO"))
+        return new(
+            Items: [.. response.Documents],
+            TotalCount: response.Total,
+            CurrentPage: request.Page,
+            PageSize: request.PageSize,
+            ExecutionTime: timer.Elapsed
         );
     }
 
-    private static void BuildFilters(QueryDescriptor<TEntity> q, Dictionary<string, object>? filters)
+    #region Helpers
+
+    private SearchOperationResult HandleResponse(ElasticsearchResponse response, string errorPrefix)
     {
-        if (filters is not { Count: > 0 }) return;
+        if (response.IsSuccess()) return SearchOperationResult.Success();
 
-        var queries = new List<Query>(filters.Count); // Pre-size the list
-
-        foreach (var (key, value) in filters)
-        {
-            if (string.IsNullOrWhiteSpace(key) || value is null) continue;
-
-            if (value is IEnumerable<string> values)
-            {
-                var validValues = values
-                    .Where(v => !string.IsNullOrWhiteSpace(v))
-                    .Select(v => FieldValue.String(v))
-                    .ToArray();
-
-                if (validValues.Length > 0)
-                    queries.Add(new TermsQuery { Field = key, Term = new TermsQueryField(validValues) });
-            }
-            else
-            {
-                var val = value.ToString();
-                if (!string.IsNullOrWhiteSpace(val))
-                    queries.Add(new TermQuery(key) { Value = val });
-            }
-        }
-
-        if (queries.Count > 0) q.Bool(b => b.Filter(queries.ToArray()));
+        logger.LogError("Elasticsearch: {Prefix}. {Error}", errorPrefix, response.DebugInformation);
+        return SearchOperationResult.Failure(response.ElasticsearchServerError?.Error.Reason ?? "Unknown Error");
     }
 
-    private static void BuildSort(SortOptionsDescriptor<TEntity> sort, SearchQuery request)
-    {
-        if (string.IsNullOrWhiteSpace(request.SortBy)) return;
-
-        sort.Field(request.SortBy, f => f
-            .Order(request.SortDescending ? SortOrder.Desc : SortOrder.Asc));
-    }
-
-    private ElasticOperationResult LogAndReturnFailure(ElasticsearchResponse response, string op, string? id = null)
-    {
-        var error = response.ElasticsearchServerError?.Error.Reason ?? "Unknown error";
-        logger.LogError("Failed to {Operation} document {Id} in {Index}. Error: {Error}", op, id ?? "", DefaultIndex, error);
-        return ElasticOperationResult.Failure(error);
-    }
+    #endregion
 }

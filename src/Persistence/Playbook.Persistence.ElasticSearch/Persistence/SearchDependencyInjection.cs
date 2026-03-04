@@ -20,7 +20,13 @@ public static class SearchDependencyInjection
         var settings = new ElasticsearchClientSettings(new Uri(options.Url))
             .DefaultIndex(options.DefaultIndex)
             .MaximumRetries(options.MaxRetries)
-            .SniffOnStartup(options.SniffOnStartup);
+            .SniffOnStartup(options.SniffOnStartup)
+            .ThrowExceptions(false);
+
+        if (options.EnableDebugMode)
+        {
+            settings.EnableDebugMode().PrettyJson();
+        }
 
         // 2. Handle Authentication Strategy
         if (!string.IsNullOrWhiteSpace(options.ApiKey))
