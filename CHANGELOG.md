@@ -1,3 +1,20 @@
+# [1.3.0](https://github.com/TheGresta/DotNet.Architect.Playbook/compare/v1.2.0...v1.3.0) (2026-03-04)
+
+
+### Bug Fixes
+
+* **elastic:** [Issue [#14](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/14)] ai suggesstion fixes ([8f4fa68](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/8f4fa685fbef1cde8c63e7f910eb88642b68d5e0))
+* **elastic:** [Issue [#14](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/14)] ai suggesstion fixes 2 ([62dc4b9](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/62dc4b9efcbaabfb6d596908d316876dd056ac14))
+* **elastic:** [Issue [#14](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/14)] ai suggesstion fixes 3 ([c7a49c2](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/c7a49c2f1d94fd7a440410b1b3979ac0a82642f4))
+* **elastic:** [Issue [#14](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/14)] ai suggesstion fixes 4 ([2d1af22](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/2d1af22b12c921c4dfeaa8f5590927bb3486b120))
+
+
+### Features
+
+* **elastic:** [Issue [#14](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/14)] initial integration ([897e6d0](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/897e6d0c283fb6454e8644a6420f51a77953839b))
+* **elastic:** [Issue [#14](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/14)] main system completed ([6ef7d20](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/6ef7d206ce86b38c71c783603aac02c2138dfbc7))
+* **elastic:** [Issue [#14](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/14)] optimisation and clean code ([813a13b](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/813a13b55a73d46eec154f3eeece61e1b0767fba))
+
 # [1.2.0](https://github.com/TheGresta/DotNet.Architect.Playbook/compare/v1.1.0...v1.2.0) (2026-03-03)
 
 
