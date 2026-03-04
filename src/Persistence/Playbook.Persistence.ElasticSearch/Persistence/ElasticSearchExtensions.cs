@@ -155,10 +155,12 @@ internal static class ElasticSearchExtensions
             .Where(x => x.Value is not null)
             .Select(x =>
             {
-                var member = GetMemberInfo(x.Key);
-                var rawFieldName = member is not null
-                    ? char.ToLowerInvariant(member.Name[0]) + member.Name[1..]
-                    : string.Empty;
+                var member = GetMemberInfo(x.Key)
+                    ?? throw new ArgumentException(
+                        $"Filter expression '{x.Key}' must target a direct field/property access.",
+                            nameof(filters));
+
+                var rawFieldName = char.ToLowerInvariant(member.Name[0]) + member.Name[1..];
 
                 // Mirror the same string-detection logic used in ApplySort
                 var isStringField = member switch
@@ -183,7 +185,10 @@ internal static class ElasticSearchExtensions
                     double d => d,
                     decimal dec => (double)dec,
                     string s => s,
-                    _ => x.Value.ToString() ?? string.Empty  // safe fallback
+                    Guid g => g.ToString(),
+                    Enum e => e.ToString(),
+                    _ => throw new NotSupportedException(
+                        $"Unsupported filter value type '{x.Value.GetType().FullName}' for expression '{x.Key}'.")
                 };
 
                 return (Query)new TermQuery(fieldName) { Value = fieldValue };
