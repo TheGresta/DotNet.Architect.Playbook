@@ -156,7 +156,9 @@ internal static class ElasticSearchExtensions
             .Select(x =>
             {
                 var member = GetMemberInfo(x.Key);
-                var rawFieldName = member?.Name.ToLowerInvariant() ?? string.Empty;
+                var rawFieldName = member is not null
+                    ? char.ToLowerInvariant(member.Name[0]) + member.Name[1..]
+                    : string.Empty;
 
                 // Mirror the same string-detection logic used in ApplySort
                 var isStringField = member switch
