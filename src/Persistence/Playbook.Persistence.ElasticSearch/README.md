@@ -48,6 +48,7 @@ graph TD
 * **ElasticsearchService.cs:** The sealed implementation handling index naming conventions and the bridge between .NET and Elastic.
 * **ElasticSearchExtensions.cs:** The "Logic Engine" that parses C# Expressions to handle the critical distinction between analyzed `text` fields and non-analyzed `keyword` fields.
 * **SearchQuery.cs:** A DTO that transforms consumer intent (Page, Filters, Term) into a structure the infrastructure can execute.
+* **Based on learnings:** prefer type-safe multi-match fields via `[SearchableField]` and avoid hard-coded field name constants in the generic pipeline.
 
 > [!TIP]
 > **Architect's Insight:** Always use the `.keyword` sub-field for sorting and aggregations on string fields. In Elasticsearch, "text" fields are tokenized for search, making them impossible to sort alphabetically. This implementation automates this via `ApplySort` to prevent common runtime errors.

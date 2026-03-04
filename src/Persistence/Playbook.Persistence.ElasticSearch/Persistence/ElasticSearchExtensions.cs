@@ -109,6 +109,11 @@ internal static class ElasticSearchExtensions
 
         var searchFields = SearchFieldCache.GetOrAdd(typeof(T), ResolveSearchFields);
 
+        if (!string.IsNullOrWhiteSpace(term) && searchFields.Length == 0)
+            throw new InvalidOperationException(
+                $"A search term was provided but no [SearchableField] attributes were found on '{typeof(T).Name}'. " +
+                $"Decorate at least one property with [SearchableField] to enable full-text search.");
+
         return descriptor.Query(q => q.Bool(b =>
         {
             if (!string.IsNullOrWhiteSpace(term) && searchFields.Length > 0)
@@ -148,9 +153,38 @@ internal static class ElasticSearchExtensions
     {
         var filterQueries = filters
             .Where(x => x.Value is not null)
-            .Select(x => (Query)new TermQuery(new Field(x.Key))
+            .Select(x =>
             {
-                Value = x.Value.ToString() ?? string.Empty
+                var member = GetMemberInfo(x.Key);
+                var rawFieldName = member?.Name.ToLowerInvariant() ?? string.Empty;
+
+                // Mirror the same string-detection logic used in ApplySort
+                var isStringField = member switch
+                {
+                    PropertyInfo pi => pi.PropertyType == typeof(string),
+                    FieldInfo fi => fi.FieldType == typeof(string),
+                    _ => false
+                };
+
+                // Append .keyword only for string fields (exact, non-analyzed matching)
+                var fieldName = isStringField
+                    ? $"{rawFieldName}{KeywordSuffix}"
+                    : rawFieldName;
+
+                // Preserve the native type so Elasticsearch receives the correct JSON value
+                FieldValue fieldValue = x.Value switch
+                {
+                    bool b => b,
+                    int i => (long)i,
+                    long l => l,
+                    float f => (double)f,
+                    double d => d,
+                    decimal dec => (double)dec,
+                    string s => s,
+                    _ => x.Value.ToString() ?? string.Empty  // safe fallback
+                };
+
+                return (Query)new TermQuery(fieldName) { Value = fieldValue };
             })
             .ToArray();
 
@@ -173,7 +207,7 @@ internal static class ElasticSearchExtensions
             .Select(p =>
             {
                 var attr = p.GetCustomAttribute<SearchableFieldAttribute>()!;
-                var fieldName = attr.FieldName ?? p.Name.ToLowerInvariant();
+                var fieldName = attr.FieldName ?? (char.ToLowerInvariant(p.Name[0]) + p.Name[1..]);
                 return attr.Boost > 1.0 ? $"{fieldName}^{attr.Boost}" : fieldName;
             })];
     }

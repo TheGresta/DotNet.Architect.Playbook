@@ -34,6 +34,10 @@ public static class SearchDependencyInjection
         services.AddOptions<ElasticsearchOptions>()
             .Bind(configuration.GetSection(ElasticsearchOptions.SectionName))
             .ValidateDataAnnotations()
+            .Validate(
+                o => !string.IsNullOrWhiteSpace(o.ApiKey)
+                     || string.IsNullOrWhiteSpace(o.Username) == string.IsNullOrWhiteSpace(o.Password),
+                "When ApiKey is not configured, Username and Password must both be set or both be empty.")
             .ValidateOnStart();
 
         services.AddSingleton(sp =>

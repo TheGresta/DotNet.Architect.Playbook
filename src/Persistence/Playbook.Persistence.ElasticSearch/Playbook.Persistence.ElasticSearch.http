@@ -8,7 +8,7 @@ GET {{baseUrl}}/products/{{productId}}
 Accept: application/json
 
 ### Search Products with Query Parameters
-# Uses the default pagination and sorting (name)
+# Uses explicit pagination and price-desc sorting
 GET {{baseUrl}}/products/search?term=laptop&category=electronics&page=1&pageSize=10&sortBy=price&sortDescending=true
 Accept: application/json
 
