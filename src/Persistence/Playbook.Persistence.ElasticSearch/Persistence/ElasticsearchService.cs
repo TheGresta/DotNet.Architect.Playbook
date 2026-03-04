@@ -6,14 +6,29 @@ using Playbook.Persistence.ElasticSearch.Application.Models;
 
 namespace Playbook.Persistence.ElasticSearch.Persistence;
 
+/// <summary>
+/// Provides a concrete implementation of <see cref="ISearchService{TEntity}"/> using the official Elasticsearch .NET client.
+/// </summary>
+/// <typeparam name="T">The document type, which must inherit from <see cref="BaseDocument"/>.</typeparam>
+/// <remarks>
+/// This service automatically determines the index name based on the lowercase name of the type <typeparamref name="T"/>.
+/// It utilizes primary constructors for dependency injection of the <see cref="ElasticsearchClient"/> and logging infrastructure.
+/// </remarks>
 public sealed class ElasticsearchService<T>(
     ElasticsearchClient client,
     ILogger<ElasticsearchService<T>> logger)
     : ISearchService<T> where T : BaseDocument
 {
+    /// <summary>
+    /// The name of the Elasticsearch index, derived from the type name in lowercase.
+    /// </summary>
     private static readonly string IndexName = typeof(T).Name.ToLowerInvariant();
 
-    public async ValueTask<T?> GetAsync(string id, CancellationToken ct = default)
+    /// <inheritdoc/>
+    /// <remarks>
+    /// If the document is not found or the request fails, a warning is logged and <see langword="null"/> is returned.
+    /// </remarks>
+    public async ValueTask<T?> GetAsync(string id, CancellationToken ct)
     {
         var response = await client.GetAsync<T>(id, ct);
 
@@ -26,13 +41,20 @@ public sealed class ElasticsearchService<T>(
         return null;
     }
 
-    public async Task<SearchOperationResult> SaveAsync(T entity, CancellationToken ct = default)
+    /// <inheritdoc/>
+    /// <exception cref="ArgumentNullException">Thrown if the entity is null.</exception>
+    public async Task<SearchOperationResult> SaveAsync(T entity, CancellationToken ct)
     {
         var response = await client.IndexAsync(entity, ct);
         return HandleResponse(response, "Indexing failed");
     }
 
-    public async Task<SearchOperationResult> BulkSaveAsync(IEnumerable<T> entities, CancellationToken ct = default)
+    /// <inheritdoc/>
+    /// <remarks>
+    /// This method uses the <c>Refresh.WaitFor</c> policy to ensure that the changes are visible to subsequent 
+    /// search requests immediately after the task completes.
+    /// </remarks>
+    public async Task<SearchOperationResult> BulkSaveAsync(IEnumerable<T> entities, CancellationToken ct)
     {
         if (!entities.Any()) return SearchOperationResult.Success();
 
@@ -52,13 +74,19 @@ public sealed class ElasticsearchService<T>(
         return SearchOperationResult.Failure($"Bulk operation failed with {errorCount} errors.");
     }
 
-    public async Task<SearchOperationResult> DeleteAsync(string id, CancellationToken ct = default)
+    /// <inheritdoc/>
+    public async Task<SearchOperationResult> DeleteAsync(string id, CancellationToken ct)
     {
         var response = await client.DeleteAsync<T>(id, ct);
         return HandleResponse(response, $"Delete failed for {id}");
     }
 
-    public async Task<SearchPageResponse<T>> QueryAsync(SearchQuery<T> request, CancellationToken ct = default)
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Calculates execution time using <see cref="Stopwatch.GetTimestamp"/> for high-precision measurement.
+    /// If the search engine returns an error, an empty <see cref="SearchPageResponse{T}"/> is returned and the error is logged.
+    /// </remarks>
+    public async Task<SearchPageResponse<T>> QueryAsync(SearchQuery<T> request, CancellationToken ct)
     {
         var timestamp = Stopwatch.GetTimestamp();
 
@@ -89,6 +117,12 @@ public sealed class ElasticsearchService<T>(
 
     #region Helpers
 
+    /// <summary>
+    /// Processes an <see cref="ElasticsearchResponse"/> and converts it into a unified <see cref="SearchOperationResult"/>.
+    /// </summary>
+    /// <param name="response">The raw response from the Elasticsearch client.</param>
+    /// <param name="errorPrefix">A contextual prefix for the log message if the operation fails.</param>
+    /// <returns>A <see cref="SearchOperationResult"/> indicating success or containing the server's error reason.</returns>
     private SearchOperationResult HandleResponse(ElasticsearchResponse response, string errorPrefix)
     {
         if (response.IsSuccess())
