@@ -1,0 +1,6 @@
+@Playbook.Persistence.Redis_HostAddress = http://localhost:5229
+
+GET {{Playbook.Persistence.Redis_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

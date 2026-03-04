@@ -67,10 +67,42 @@ services:
     networks:
       - app-network
 
+  redis:
+    image: redis:7.2
+    container_name: redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis-cli:
+    image: redis:7.2
+    container_name: redis-cli
+    depends_on:
+      - redis
+    entrypoint: ["redis-cli"]
+    networks:
+      - app-network
+    stdin_open: true
+    tty: true
+
 volumes:
   mongodb_data:
   postgres_data:
   elastic_data:
+  redis_data:
 
 networks:
   app-network:
