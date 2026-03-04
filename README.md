@@ -4,18 +4,15 @@
 
 [![Build Status](https://github.com/TheGresta/DotNet.Architect.Playbook/actions/workflows/pr-integrity.yml/badge.svg)](https://github.com/TheGresta/DotNet.Architect.Playbook/actions)
 [![Version](https://img.shields.io/github/v/release/TheGresta/DotNet.Architect.Playbook?color=blue&logo=github)](https://github.com/TheGresta/DotNet.Architect.Playbook/releases)
-[![.NET Version](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](#)
+[![Framework](https://img.shields.io/badge/.NET-8.0-blueviolet)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![License](https://img.shields.io/github/license/TheGresta/DotNet.Architect.Playbook?color=orange)](LICENSE)
 [![Semantic Release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
-
-[![Repository Size](https://img.shields.io/github/repo-size/TheGresta/DotNet.Architect.Playbook?color=success)](#)
-[![Last Commit](https://img.shields.io/github/last-commit/TheGresta/DotNet.Architect.Playbook?color=success)](#)
-[![Open Issues](https://img.shields.io/github/issues/TheGresta/DotNet.Architect.Playbook)](#)
-[![Pull Requests](https://img.shields.io/github/issues-pr/TheGresta/DotNet.Architect.Playbook)](#)
+[![Repository Size](https://img.shields.io/github/repo-size/TheGresta/DotNet.Architect.Playbook?color=success)](https://github.com/TheGresta/DotNet.Architect.Playbook)
+[![Last Commit](https://img.shields.io/github/last-commit/TheGresta/DotNet.Architect.Playbook?color=success)](https://github.com/TheGresta/DotNet.Architect.Playbook/commits/main)
+[![Open Issues](https://img.shields.io/github/issues/TheGresta/DotNet.Architect.Playbook)](https://github.com/TheGresta/DotNet.Architect.Playbook/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/TheGresta/DotNet.Architect.Playbook)](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls)
 
 *Building scalable, maintainable, and enterprise-grade .NET applications.*
-
-
 
 </div>
 
