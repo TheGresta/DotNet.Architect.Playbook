@@ -1,6 +1,7 @@
 ﻿using System.Linq.Expressions;
 using Microsoft.AspNetCore.Mvc;
 using Playbook.Persistence.ElasticSearch.Application;
+using Playbook.Persistence.ElasticSearch.Application.Documents;
 using Playbook.Persistence.ElasticSearch.Application.Models;
 
 namespace Playbook.Persistence.ElasticSearch.Controllers;
@@ -29,7 +30,13 @@ public class ProductsController(ISearchService<Product> searchService) : Control
     [HttpPost("bulk")]
     public async Task<IActionResult> BulkCreate([FromBody] IEnumerable<Product> products, CancellationToken ct)
     {
-        var result = await searchService.BulkSaveAsync(products, ct);
+        var productList = products.ToList();
+        if (productList.Count > 1000)
+        {
+            return BadRequest("Bulk operations are limited to 1000 items per request.");
+        }
+
+        var result = await searchService.BulkSaveAsync(productList, ct);
         return result.IsSuccess ? Ok("Bulk indexing completed.") : BadRequest(result.ErrorMessage);
     }
 
@@ -92,12 +99,4 @@ public class ProductsController(ISearchService<Product> searchService) : Control
         };
 
     #endregion
-}
-public class Product : BaseDocument
-{
-    public required string Name { get; init; }
-    public string? Description { get; init; }
-    public decimal Price { get; init; }
-    public string? Category { get; init; }
-    public int Stock { get; init; }
 }

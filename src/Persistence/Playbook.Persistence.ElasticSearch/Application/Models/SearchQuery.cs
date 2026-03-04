@@ -8,6 +8,9 @@ namespace Playbook.Persistence.ElasticSearch.Application.Models;
 /// <typeparam name="T">The type of document to search, constrained to <see cref="BaseDocument"/>.</typeparam>
 public class SearchQuery<T> where T : BaseDocument
 {
+    private int page = 1;
+    private int pageSize = 10;
+
     /// <summary>
     /// Gets or sets the full-text search term.
     /// </summary>
@@ -16,12 +19,20 @@ public class SearchQuery<T> where T : BaseDocument
     /// <summary>
     /// Gets or sets the current page number. Defaults to 1.
     /// </summary>
-    public int Page { get; set; } = 1;
+    public int Page
+    {
+        get => page;
+        set => page = value< 1 ? 1 : value;
+    }
 
     /// <summary>
     /// Gets or sets the maximum number of records to return in a single page. Defaults to 10.
     /// </summary>
-    public int PageSize { get; set; } = 10;
+    public int PageSize
+    {
+        get => pageSize;
+        set => pageSize = value< 1 ? 10 : value;
+    }
 
     /// <summary>
     /// Gets or sets the expression used to determine the field by which results are ordered.

@@ -1,6 +1,49 @@
-@Playbook.Persistence.ElasticSearch_HostAddress = http://localhost:5164
+@hostname = localhost
+@port = 5164
+@baseUrl = https://{{hostname}}:{{port}}/api
+@productId = 00000000-0000-0000-0000-000000000000
 
-GET {{Playbook.Persistence.ElasticSearch_HostAddress}}/weatherforecast/
+### Get Product by ID
+GET {{baseUrl}}/products/{{productId}}
 Accept: application/json
 
-###
+### Search Products with Query Parameters
+# Uses the default pagination and sorting (name)
+GET {{baseUrl}}/products/search?term=laptop&category=electronics&page=1&pageSize=10&sortBy=price&sortDescending=true
+Accept: application/json
+
+### Create a New Product
+POST {{baseUrl}}/products
+Content-Type: application/json
+
+{
+  "name": "Mechanical Keyboard",
+  "description": "RGB Backlit tactile keyboard",
+  "price": 89.99,
+  "category": "Peripherals",
+  "stock": 50
+}
+
+### Bulk Create Products
+POST {{baseUrl}}/products/bulk
+Content-Type: application/json
+
+[
+  {
+    "name": "Gaming Mouse",
+    "description": "High DPI wireless mouse",
+    "price": 59.99,
+    "category": "Peripherals",
+    "stock": 120
+  },
+  {
+    "name": "Desk Mat",
+    "description": "Large felt desk mat",
+    "price": 25.00,
+    "category": "Accessories",
+    "stock": 200
+  }
+]
+
+### Delete a Product
+DELETE {{baseUrl}}/products/{{productId}}

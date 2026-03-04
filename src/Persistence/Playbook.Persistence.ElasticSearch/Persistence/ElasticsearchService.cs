@@ -30,7 +30,7 @@ public sealed class ElasticsearchService<T>(
     /// </remarks>
     public async ValueTask<T?> GetAsync(string id, CancellationToken ct)
     {
-        var response = await client.GetAsync<T>(id, ct);
+        var response = await client.GetAsync<T>(id, g => g.Index(IndexName), ct);
 
         if (response.IsSuccess())
         {
@@ -45,7 +45,7 @@ public sealed class ElasticsearchService<T>(
     /// <exception cref="ArgumentNullException">Thrown if the entity is null.</exception>
     public async Task<SearchOperationResult> SaveAsync(T entity, CancellationToken ct)
     {
-        var response = await client.IndexAsync(entity, ct);
+        var response = await client.IndexAsync(entity, i => i.Index(IndexName), ct);
         return HandleResponse(response, "Indexing failed");
     }
 
@@ -63,21 +63,28 @@ public sealed class ElasticsearchService<T>(
             .IndexMany(entities)
             .Refresh(Refresh.WaitFor), ct);
 
-        if (bulkResponse.IsSuccess())
+        // 1. Transport-level failure (network, auth, serialization, etc.)
+        if (!bulkResponse.IsSuccess())
         {
-            return SearchOperationResult.Success();
+            logger.LogError("Elasticsearch: Bulk request failed at transport level. Debug: {Debug}", bulkResponse.DebugInformation);
+            return SearchOperationResult.Failure("Bulk operation transport failure.");
         }
-
-        var errorCount = bulkResponse.ItemsWithErrors.Count();
-        logger.LogError("Elasticsearch: Bulk indexing had {Count} errors. Debug: {Debug}", errorCount, bulkResponse.DebugInformation);
-
-        return SearchOperationResult.Failure($"Bulk operation failed with {errorCount} errors.");
+        
+        // 2. Per-item failures within an HTTP 200 response
+        if (bulkResponse.Errors)
+        {
+            var errorCount = bulkResponse.ItemsWithErrors.Count();
+            logger.LogError("Elasticsearch: Bulk indexing had {Count} item-level errors. Debug: {Debug}", errorCount, bulkResponse.DebugInformation);
+            return SearchOperationResult.Failure($"Bulk operation failed with {errorCount} item errors.");
+        }
+        
+        return SearchOperationResult.Success();
     }
 
     /// <inheritdoc/>
     public async Task<SearchOperationResult> DeleteAsync(string id, CancellationToken ct)
     {
-        var response = await client.DeleteAsync<T>(id, ct);
+        var response = await client.DeleteAsync<T>(id, d => d.Index(IndexName), ct);
         return HandleResponse(response, $"Delete failed for {id}");
     }
 

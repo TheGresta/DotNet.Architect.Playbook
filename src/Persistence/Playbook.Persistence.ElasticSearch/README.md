@@ -9,6 +9,7 @@
 ---
 
 ## 📖 1. Executive Summary
+
 > [!NOTE]  
 > **The Problem:** Implementing a robust search layer often leads to leaked infrastructure concerns (Leaky Abstractions), where Elasticsearch-specific DSL or complex pagination logic pollutes the Application layer, making the system difficult to maintain or unit test.
 > 
@@ -19,6 +20,7 @@
 ## 🏗️ 2. Design & Strategy
 
 ### 📊 System Visualization
+
 ```mermaid
 graph TD
     A[Consumer/API] -->|SearchQuery| B(ISearchService)
@@ -47,8 +49,8 @@ graph TD
 * **ElasticSearchExtensions.cs:** The "Logic Engine" that parses C# Expressions to handle the critical distinction between analyzed `text` fields and non-analyzed `keyword` fields.
 * **SearchQuery.cs:** A DTO that transforms consumer intent (Page, Filters, Term) into a structure the infrastructure can execute.
 
-[!TIP]
-**Architect's Insight:** Always use the `.keyword` sub-field for sorting and aggregations on string fields. In Elasticsearch, "text" fields are tokenized for search, making them impossible to sort alphabetically. This implementation automates this via `ApplySort` to prevent common runtime errors.
+> [!TIP]
+> **Architect's Insight:** Always use the `.keyword` sub-field for sorting and aggregations on string fields. In Elasticsearch, "text" fields are tokenized for search, making them impossible to sort alphabetically. This implementation automates this via `ApplySort` to prevent common runtime errors.
 
 ## 🚦 4. Verification Guide
 

@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using System.Collections.Concurrent;
+using System.Linq.Expressions;
 using System.Reflection;
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Mapping;
@@ -12,8 +13,14 @@ namespace Playbook.Persistence.ElasticSearch.Persistence;
 /// </summary>
 internal static class ElasticSearchExtensions
 {
-    private const string DefaultNameBoost = "name^3";
-    private const string DefaultDescriptionField = "description";
+    /// <summary>
+    /// Caches the reflected field list per document type to avoid repeated reflection overhead.
+    /// </summary>
+    private static readonly ConcurrentDictionary<Type, string[]> SearchFieldCache = [];
+
+    /// <summary>
+    /// The suffix used to target non-analyzed string fields in Elasticsearch.
+    /// </summary>
     private const string KeywordSuffix = ".keyword";
 
     /// <summary>
@@ -21,12 +28,22 @@ internal static class ElasticSearchExtensions
     /// </summary>
     /// <typeparam name="T">The document type inheriting from <see cref="BaseDocument"/>.</typeparam>
     /// <param name="descriptor">The search request descriptor being built.</param>
-    /// <param name="sortByExpression">A lambda expression identifying the property to sort by.</param>
-    /// <param name="sortDescending">Indicates whether to sort in descending order.</param>
-    /// <returns>The modified <see cref="SearchRequestDescriptor{T}"/>.</returns>
+    /// <param name="sortByExpression">A lambda expression identifying the property to sort by. If <see langword="null"/>, no sort is applied.</param>
+    /// <param name="sortDescending">Indicates whether to sort in descending order (<see langword="true"/>) or ascending order (<see langword="false"/>).</param>
+    /// <returns>The modified <see cref="SearchRequestDescriptor{T}"/> instance for method chaining.</returns>
     /// <remarks>
-    /// This method automatically appends the <c>.keyword</c> suffix to <see cref="string"/> properties. 
+    /// <para>
+    /// This method automatically converts C# PascalCase property names to camelCase to match the default serialization behavior 
+    /// of the <c>Elastic.Clients.Elasticsearch</c> v8 client.
+    /// </para>
+    /// <para>
+    /// For <see cref="string"/> properties, the method appends the <c>.keyword</c> suffix. 
     /// This ensures sorting is performed on the exact, non-analyzed value rather than the tokenized text.
+    /// </para>
+    /// <code language="csharp">
+    /// // Example: Sorting by Name descending
+    /// searchDescriptor.ApplySort(x => x.Name, true);
+    /// </code>
     /// </remarks>
     public static SearchRequestDescriptor<T> ApplySort<T>(
         this SearchRequestDescriptor<T> descriptor,
@@ -38,21 +55,26 @@ internal static class ElasticSearchExtensions
         var member = GetMemberInfo(sortByExpression);
         if (member is null) return descriptor;
 
-        var fieldName = member.Name.ToLowerInvariant();
+        // Use camelCase to match the Elastic.Clients.Elasticsearch v8 default serialisation
+        var fieldName = char.ToLowerInvariant(member.Name[0]) + member.Name[1..];
+
         var isString = member switch
         {
-            PropertyInfo pi => pi.PropertyType == typeof(string),
-            FieldInfo fi => fi.FieldType == typeof(string),
+            PropertyInfo pi => (Nullable.GetUnderlyingType(pi.PropertyType) ?? pi.PropertyType) == typeof(string),
+            FieldInfo fi => (Nullable.GetUnderlyingType(fi.FieldType) ?? fi.FieldType) == typeof(string),
             _ => false
         };
 
-        // Only append .keyword for string fields to target the non-analyzed version
+        // Only append .keyword for string fields to target the non-analysed value
         var finalSortField = isString ? $"{fieldName}{KeywordSuffix}" : fieldName;
+
+        // Use the type-appropriate UnmappedType so Elasticsearch handles unmapped fields correctly
+        var unmappedType = ResolveFieldType(member);
 
         return descriptor.Sort(sort => sort
             .Field(finalSortField, d => d
                 .Order(sortDescending ? SortOrder.Desc : SortOrder.Asc)
-                .UnmappedType(FieldType.Keyword)
+                .UnmappedType(unmappedType)
             )
         );
     }
@@ -62,16 +84,19 @@ internal static class ElasticSearchExtensions
     /// </summary>
     /// <typeparam name="T">The document type inheriting from <see cref="BaseDocument"/>.</typeparam>
     /// <param name="descriptor">The search request descriptor being built.</param>
-    /// <param name="filters">A dictionary of field expressions and their associated values for filtering.</param>
-    /// <param name="term">An optional search string for full-text multi-match queries.</param>
-    /// <returns>The modified <see cref="SearchRequestDescriptor{T}"/>.</returns>
+    /// <param name="filters">A <see cref="Dictionary{TKey, TValue}"/> of field expressions and their associated values for filtering. Null values are ignored.</param>
+    /// <param name="term">An optional search string for full-text multi-match queries. If <see langword="null"/> or whitespace, full-text search is skipped.</param>
+    /// <returns>The modified <see cref="SearchRequestDescriptor{T}"/> instance.</returns>
     /// <remarks>
     /// <para>
     /// If neither <paramref name="term"/> nor <paramref name="filters"/> are provided, the method defaults to a <c>match_all</c> query.
     /// </para>
     /// <para>
-    /// Full-text search is applied via <c>MultiMatch</c> targeting the "name" (with a 3x boost) and "description" fields.
-    /// Filters are applied as a <c>Filter</c> clause, which bypasses scoring and improves performance through caching.
+    /// Full-text search fields are resolved via reflection and cached in <see cref="SearchFieldCache"/>. 
+    /// These fields must be decorated with the <c>SearchableFieldAttribute</c>.
+    /// </para>
+    /// <para>
+    /// Filters are applied as a <c>Filter</c> clause, which bypasses relevance scoring and improves performance through caching.
     /// </para>
     /// </remarks>
     public static SearchRequestDescriptor<T> ApplyDynamicQuery<T>(
@@ -79,42 +104,31 @@ internal static class ElasticSearchExtensions
         Dictionary<Expression<Func<T, object>>, object> filters,
         string? term = null) where T : BaseDocument
     {
-        return descriptor.Query(q =>
-        {
-            var hasTerm = !string.IsNullOrWhiteSpace(term);
-            var hasFilters = filters is { Count: > 0 };
+        if (string.IsNullOrWhiteSpace(term) && filters.Count == 0)
+            return descriptor.Query(q => q.MatchAll(new MatchAllQuery()));
 
-            if (!hasTerm && !hasFilters)
+        var searchFields = SearchFieldCache.GetOrAdd(typeof(T), ResolveSearchFields);
+
+        return descriptor.Query(q => q.Bool(b =>
+        {
+            if (!string.IsNullOrWhiteSpace(term) && searchFields.Length > 0)
             {
-                q.MatchAll(_ => { });
-                return;
+                b.Must(m => m.MultiMatch(mm => mm
+                    .Query(term)
+                    .Fields(searchFields)));
             }
 
-            q.Bool(b =>
-            {
-                if (hasTerm)
-                {
-                    b.Must(m => m.MultiMatch(mm => mm
-                        .Query(term!)
-                        .Fields(Fields.FromStrings([DefaultNameBoost, DefaultDescriptionField]))
-                    ));
-                }
-
-                if (hasFilters)
-                {
-                    ApplyFilterQueries(b, filters);
-                }
-            });
-        });
+            ApplyFilterQueries(b, filters);
+        }));
     }
 
     #region Private Helpers
 
     /// <summary>
-    /// Extracts <see cref="MemberInfo"/> from a variety of expression types.
+    /// Extracts <see cref="MemberInfo"/> from a variety of expression types, including boxing and unary conversions.
     /// </summary>
     /// <param name="expression">The expression to parse.</param>
-    /// <returns>The <see cref="MemberInfo"/> if found; otherwise, <see langword="null"/>.</returns>
+    /// <returns>The <see cref="MemberInfo"/> if the expression represents a field or property; otherwise, <see langword="null"/>.</returns>
     private static MemberInfo? GetMemberInfo(Expression expression) => expression switch
     {
         LambdaExpression le => GetMemberInfo(le.Body),
@@ -124,11 +138,11 @@ internal static class ElasticSearchExtensions
     };
 
     /// <summary>
-    /// Converts the filter dictionary into a collection of Elasticsearch <see cref="TermQuery"/> objects.
+    /// Converts the filter dictionary into a collection of Elasticsearch <see cref="TermQuery"/> objects and applies them to the descriptor.
     /// </summary>
     /// <typeparam name="T">The document type inheriting from <see cref="BaseDocument"/>.</typeparam>
     /// <param name="boolDescriptor">The boolean query descriptor to which filters will be added.</param>
-    /// <param name="filters">The dictionary containing field expressions and values.</param>
+    /// <param name="filters">The dictionary containing field expressions and values used to build <see cref="TermQuery"/> clauses.</param>
     private static void ApplyFilterQueries<T>(BoolQueryDescriptor<T> boolDescriptor, Dictionary<Expression<Func<T, object>>, object> filters)
         where T : BaseDocument
     {
@@ -144,6 +158,53 @@ internal static class ElasticSearchExtensions
         {
             boolDescriptor.Filter(filterQueries);
         }
+    }
+
+    /// <summary>
+    /// Uses reflection to identify properties decorated with <c>SearchableFieldAttribute</c> and formats them for Elasticsearch.
+    /// </summary>
+    /// <param name="documentType">The <see cref="Type"/> of the document to inspect.</param>
+    /// <returns>An array of field names, potentially including boost factors (e.g., "fieldName^3").</returns>
+    private static string[] ResolveSearchFields(Type documentType)
+    {
+        return [.. documentType
+            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.IsDefined(typeof(SearchableFieldAttribute), inherit: true))
+            .Select(p =>
+            {
+                var attr = p.GetCustomAttribute<SearchableFieldAttribute>()!;
+                var fieldName = attr.FieldName ?? p.Name.ToLowerInvariant();
+                return attr.Boost > 1.0 ? $"{fieldName}^{attr.Boost}" : fieldName;
+            })];
+    }
+
+    /// <summary>
+    /// Maps a <see cref="MemberInfo"/> to its corresponding Elasticsearch <see cref="FieldType"/>.
+    /// </summary>
+    /// <param name="member">The property or field to resolve.</param>
+    /// <returns>The <see cref="FieldType"/> to use for the <c>UnmappedType</c> setting in queries.</returns>
+    private static FieldType ResolveFieldType(MemberInfo member)
+    {
+        var clrType = member switch
+        {
+            PropertyInfo pi => Nullable.GetUnderlyingType(pi.PropertyType) ?? pi.PropertyType,
+            FieldInfo fi => Nullable.GetUnderlyingType(fi.FieldType) ?? fi.FieldType,
+            _ => typeof(object)
+        };
+
+        return clrType switch
+        {
+            _ when clrType == typeof(string) => FieldType.Keyword,
+            _ when clrType == typeof(int) => FieldType.Integer,
+            _ when clrType == typeof(long) => FieldType.Long,
+            _ when clrType == typeof(float) => FieldType.Float,
+            _ when clrType == typeof(double) => FieldType.Double,
+            _ when clrType == typeof(decimal) => FieldType.ScaledFloat,
+            _ when clrType == typeof(DateTime) => FieldType.Date,
+            _ when clrType == typeof(DateTimeOffset) => FieldType.Date,
+            _ when clrType == typeof(bool) => FieldType.Boolean,
+            _ => FieldType.Keyword
+        };
     }
 
     #endregion

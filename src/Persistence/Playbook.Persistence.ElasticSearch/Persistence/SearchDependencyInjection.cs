@@ -90,11 +90,23 @@ public static class SearchDependencyInjection
     /// </remarks>
     private static void ConfigureAuthentication(ElasticsearchClientSettings settings, ElasticsearchOptions options)
     {
-        _ = options switch
+        if (!string.IsNullOrWhiteSpace(options.ApiKey))
         {
-            { ApiKey: { Length: > 0 } key } => settings.Authentication(new ApiKey(key)),
-            { Username: { Length: > 0 } user } => settings.Authentication(new BasicAuthentication(user, options.Password ?? string.Empty)),
-            _ => settings // No authentication provided
-        };
+            settings.Authentication(new ApiKey(options.ApiKey));
+            return;
+        }
+        
+        var hasUsername = !string.IsNullOrWhiteSpace(options.Username);
+        var hasPassword = !string.IsNullOrWhiteSpace(options.Password);
+        
+        if (hasUsername ^ hasPassword)
+        {
+            throw new InvalidOperationException("Elasticsearch basic authentication requires both Username and Password.");
+        }
+        
+        if (hasUsername)
+        {
+            settings.Authentication(new BasicAuthentication(options.Username!, options.Password!));
+        }
     }
 }

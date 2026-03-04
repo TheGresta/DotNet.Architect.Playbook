@@ -53,7 +53,7 @@ services:
       - app-network
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:9.3.1
+    image: docker.elastic.co/kibana/kibana:8.15.0
     container_name: kibana
     restart: unless-stopped
     ports:

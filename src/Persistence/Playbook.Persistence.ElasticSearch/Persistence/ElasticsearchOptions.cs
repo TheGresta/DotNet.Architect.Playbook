@@ -54,6 +54,7 @@ public record ElasticsearchOptions
     /// Gets the maximum number of times the client should retry a failed request.
     /// </summary>
     /// <value>Defaults to 3.</value>
+    [Range(0, int.MaxValue)]
     public int MaxRetries { get; init; } = 3;
 
     /// <summary>
