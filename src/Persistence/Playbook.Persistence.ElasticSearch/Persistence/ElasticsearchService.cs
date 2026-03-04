@@ -8,14 +8,19 @@ namespace Playbook.Persistence.ElasticSearch.Persistence;
 
 public sealed class ElasticsearchService<T>(
     ElasticsearchClient client,
-    ILogger<ElasticsearchService<T>> logger) : ISearchService<T> where T : BaseDocument
+    ILogger<ElasticsearchService<T>> logger)
+    : ISearchService<T> where T : BaseDocument
 {
-    private static readonly string _indexName = typeof(T).Name.ToLowerInvariant();
+    private static readonly string IndexName = typeof(T).Name.ToLowerInvariant();
+
     public async ValueTask<T?> GetAsync(string id, CancellationToken ct = default)
     {
         var response = await client.GetAsync<T>(id, ct);
 
-        if (response.IsSuccess()) return response.Source;
+        if (response.IsSuccess())
+        {
+            return response.Source;
+        }
 
         logger.LogWarning("Elasticsearch: Get failed for {Id}. Debug: {Reason}", id, response.DebugInformation);
         return null;
@@ -29,15 +34,21 @@ public sealed class ElasticsearchService<T>(
 
     public async Task<SearchOperationResult> BulkSaveAsync(IEnumerable<T> entities, CancellationToken ct = default)
     {
+        if (!entities.Any()) return SearchOperationResult.Success();
+
         var bulkResponse = await client.BulkAsync(b => b
-            .Index(_indexName)
+            .Index(IndexName)
             .IndexMany(entities)
             .Refresh(Refresh.WaitFor), ct);
 
-        if (bulkResponse.IsSuccess()) return SearchOperationResult.Success();
+        if (bulkResponse.IsSuccess())
+        {
+            return SearchOperationResult.Success();
+        }
 
         var errorCount = bulkResponse.ItemsWithErrors.Count();
         logger.LogError("Elasticsearch: Bulk indexing had {Count} errors. Debug: {Debug}", errorCount, bulkResponse.DebugInformation);
+
         return SearchOperationResult.Failure($"Bulk operation failed with {errorCount} errors.");
     }
 
@@ -49,22 +60,22 @@ public sealed class ElasticsearchService<T>(
 
     public async Task<SearchPageResponse<T>> QueryAsync(SearchQuery<T> request, CancellationToken ct = default)
     {
-        var timer = Stopwatch.StartNew();
+        var timestamp = Stopwatch.GetTimestamp();
 
         var response = await client.SearchAsync<T>(s => s
-            .Index(_indexName)
+            .Index(IndexName)
             .From(request.Skip)
             .Size(request.PageSize)
             .ApplyDynamicQuery(request.Filters, request.Term)
             .ApplySort(request.SortByExpression, request.SortDescending)
         , ct);
 
-        timer.Stop();
+        var elapsed = Stopwatch.GetElapsedTime(timestamp);
 
         if (!response.IsSuccess())
         {
             logger.LogError("Elasticsearch: Query failed. {Error}", response.DebugInformation);
-            return new([], 0, request.Page, request.PageSize, timer.Elapsed);
+            return new([], 0, request.Page, request.PageSize, elapsed);
         }
 
         return new(
@@ -72,7 +83,7 @@ public sealed class ElasticsearchService<T>(
             TotalCount: response.Total,
             CurrentPage: request.Page,
             PageSize: request.PageSize,
-            ExecutionTime: timer.Elapsed
+            ExecutionTime: elapsed
         );
     }
 
@@ -80,10 +91,15 @@ public sealed class ElasticsearchService<T>(
 
     private SearchOperationResult HandleResponse(ElasticsearchResponse response, string errorPrefix)
     {
-        if (response.IsSuccess()) return SearchOperationResult.Success();
+        if (response.IsSuccess())
+        {
+            return SearchOperationResult.Success();
+        }
 
+        var reason = response.ElasticsearchServerError?.Error.Reason ?? "Unknown Error";
         logger.LogError("Elasticsearch: {Prefix}. {Error}", errorPrefix, response.DebugInformation);
-        return SearchOperationResult.Failure(response.ElasticsearchServerError?.Error.Reason ?? "Unknown Error");
+
+        return SearchOperationResult.Failure(reason);
     }
 
     #endregion

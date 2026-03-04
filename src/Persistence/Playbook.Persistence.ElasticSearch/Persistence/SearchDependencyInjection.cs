@@ -1,5 +1,6 @@
 ﻿using Elastic.Clients.Elasticsearch;
 using Elastic.Transport;
+using Microsoft.Extensions.Options;
 using Playbook.Persistence.ElasticSearch.Application;
 
 namespace Playbook.Persistence.ElasticSearch.Persistence;
@@ -8,43 +9,46 @@ public static class SearchDependencyInjection
 {
     public static IServiceCollection AddElasticsearch(this IServiceCollection services, IConfiguration configuration)
     {
-        // Bind and Validate Options
         services.AddOptions<ElasticsearchOptions>()
             .Bind(configuration.GetSection(ElasticsearchOptions.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
-        var options = configuration.GetSection(ElasticsearchOptions.SectionName).Get<ElasticsearchOptions>()
-                      ?? throw new InvalidOperationException("Elasticsearch configuration section is missing.");
-
-        var settings = new ElasticsearchClientSettings(new Uri(options.Url))
-            .DefaultIndex(options.DefaultIndex)
-            .MaximumRetries(options.MaxRetries)
-            .SniffOnStartup(options.SniffOnStartup)
-            .ThrowExceptions(false);
-
-        if (options.EnableDebugMode)
+        services.AddSingleton(sp =>
         {
-            settings.EnableDebugMode().PrettyJson();
-        }
+            var options = sp.GetRequiredService<IOptions<ElasticsearchOptions>>().Value;
 
-        // 2. Handle Authentication Strategy
-        if (!string.IsNullOrWhiteSpace(options.ApiKey))
-        {
-            settings.Authentication(new ApiKey(options.ApiKey));
-        }
-        else if (!string.IsNullOrWhiteSpace(options.Username))
-        {
-            settings.Authentication(new BasicAuthentication(options.Username, options.Password ?? string.Empty));
-        }
+            var settings = new ElasticsearchClientSettings(new Uri(options.Url))
+                .DefaultIndex(options.DefaultIndex)
+                .MaximumRetries(options.MaxRetries)
+                .SniffOnStartup(options.SniffOnStartup)
+                .ThrowExceptions(false);
 
-        // 3. Register Singleton Client (The "Engine" of the connection pool)
-        var client = new ElasticsearchClient(settings);
-        services.AddSingleton(client);
+            ConfigureLogging(settings, options);
+            ConfigureAuthentication(settings, options);
 
-        // 4. Register Infrastructure Implementations
+            return new ElasticsearchClient(settings);
+        });
+
         services.AddScoped(typeof(ISearchService<>), typeof(ElasticsearchService<>));
 
         return services;
+    }
+
+    private static void ConfigureLogging(ElasticsearchClientSettings settings, ElasticsearchOptions options)
+    {
+        if (!options.EnableDebugMode) return;
+
+        settings.EnableDebugMode().PrettyJson();
+    }
+
+    private static void ConfigureAuthentication(ElasticsearchClientSettings settings, ElasticsearchOptions options)
+    {
+        _ = options switch
+        {
+            { ApiKey: { Length: > 0 } key } => settings.Authentication(new ApiKey(key)),
+            { Username: { Length: > 0 } user } => settings.Authentication(new BasicAuthentication(user, options.Password ?? string.Empty)),
+            _ => settings // No authentication provided (e.g., local development)
+        };
     }
 }
