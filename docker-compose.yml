@@ -87,22 +87,25 @@ services:
       timeout: 5s
       retries: 5
 
-  redis-cli:
-    image: redis:7.2
-    container_name: redis-cli
-    depends_on:
-      - redis
-    entrypoint: ["redis-cli"]
+  redisinsight:
+    image: redis/redisinsight:latest
+    container_name: redisinsight
+    restart: unless-stopped
+    ports:
+      - "5540:5540"
+    volumes:
+      - redisinsight_data:/data
     networks:
       - app-network
-    stdin_open: true
-    tty: true
+    depends_on:
+      - redis
 
 volumes:
   mongodb_data:
   postgres_data:
   elastic_data:
   redis_data:
+  redisinsight_data:
 
 networks:
   app-network:

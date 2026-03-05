@@ -1,5 +1,5 @@
 ﻿using System.Text.Json.Serialization;
-using Playbook.Persistence.Redis.Application.Models;
+using Playbook.Persistence.Redis.Models;
 
 namespace Playbook.Persistence.Redis.Caching.Serialization;
 

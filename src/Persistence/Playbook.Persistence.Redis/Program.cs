@@ -1,5 +1,5 @@
-using Polly;
-using Polly.CircuitBreaker;
+using Playbook.Persistence.Redis;
+using Playbook.Persistence.Redis.Caching;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,20 +10,13 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-var resilienceBuilder = new ResiliencePipelineBuilder()
-    .AddTimeout(TimeSpan.FromMilliseconds(500))
-    .AddCircuitBreaker(new CircuitBreakerStrategyOptions
-    {
-        FailureRatio = 0.5,
-        SamplingDuration = TimeSpan.FromSeconds(30),
-        MinimumThroughput = 5,
-        BreakDuration = TimeSpan.FromSeconds(15)
-    });
+builder.Services.AddRedisCache(builder.Configuration);
 
-builder.Services.AddResiliencePipeline("redis-strategy", builder =>
-{
-    builder.AddPipeline(resilienceBuilder.Build());
-});
+// Add the in-memory repository
+builder.Services.AddSingleton<IProductRepository, InMemoryProductRepository>();
+
+// Add logging so we can see repository calls
+builder.Services.AddLogging(configure => configure.AddConsole());
 
 var app = builder.Build();
 
