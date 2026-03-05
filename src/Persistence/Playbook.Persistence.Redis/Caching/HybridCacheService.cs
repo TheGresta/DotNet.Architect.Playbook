@@ -6,6 +6,18 @@ using StackExchange.Redis;
 
 namespace Playbook.Persistence.Redis.Caching;
 
+/// <summary>
+/// A high-performance, resilient multi-level cache service orchestrating <see cref="IMemoryCache"/> (L1) 
+/// and Redis (L2) with distributed invalidation.
+/// </summary>
+/// <remarks>
+/// This service implements:
+/// <list type="bullet">
+/// <item><description><b>Striped Locking:</b> Reduces lock contention during cache stampedes using an array of <see cref="SemaphoreSlim"/>.</description></item>
+/// <item><description><b>Hybrid Invalidation:</b> Uses Redis Pub/Sub to synchronize L1 cache eviction across multiple application instances.</description></item>
+/// <item><description><b>Versioned Keys:</b> Supports logical prefix invalidation by incrementing a version counter in Redis.</description></item>
+/// </list>
+/// </remarks>
 public sealed class HybridCacheService(
     IMemoryCache l1,
     IConnectionMultiplexer redis,
@@ -23,9 +35,11 @@ public sealed class HybridCacheService(
     private const string InvalidationChannel = "cache:invalidation";
     private const string VersionSuffix = ":v";
 
-    // Initialize subscription in a controlled manner
     private bool _isSubscribed;
 
+    /// <summary>
+    /// Ensures the service is subscribed to the Redis invalidation channel.
+    /// </summary>
     private void EnsureSubscribed()
     {
         if (_isSubscribed) return;
@@ -33,15 +47,18 @@ public sealed class HybridCacheService(
         _isSubscribed = true;
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// Checks the L1 cache first. If a miss occurs, it executes the <see cref="ResiliencePipeline"/> 
+    /// to fetch data from Redis and populates the L1 cache upon success.
+    /// </remarks>
     public async ValueTask<T?> GetAsync<T>(string key, CancellationToken ct)
     {
         EnsureSubscribed();
 
-        // Path 1: L1 Fast-Hit
         if (l1.TryGetValue(key, out T? localValue))
             return localValue;
 
-        // Path 2: L2 with Resilience
         return await resiliencePipeline.ExecuteAsync(async token =>
         {
             var data = await _l2.StringGetAsync(key);
@@ -56,6 +73,13 @@ public sealed class HybridCacheService(
         }, ct);
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// Utilizes striped locking based on the hash of the versioned key to prevent multiple concurrent 
+    /// factory executions for the same resource. 
+    /// <para/>
+    /// The key is composed as <c>{prefix}:{version}:{key}</c> to support instantaneous prefix invalidation.
+    /// </remarks>
     public async ValueTask<T> GetOrSetAsync<T>(
         string prefix,
         string key,
@@ -68,17 +92,14 @@ public sealed class HybridCacheService(
         long version = await GetPrefixVersionAsync(prefix, ct);
         string versionedKey = $"{prefix}:{version}:{key}";
 
-        // Fast-path: Optimized L1 check
         if (l1.TryGetValue(versionedKey, out T? localValue))
             return localValue!;
 
-        // Striped Locking to prevent Cache Stampede
         var lockIndex = (uint)versionedKey.GetHashCode() % (uint)_locks.Length;
         await _locks[lockIndex].WaitAsync(ct);
 
         try
         {
-            // Double-check lock
             if (l1.TryGetValue(versionedKey, out localValue))
                 return localValue!;
 
@@ -94,7 +115,6 @@ public sealed class HybridCacheService(
                 }
             }
 
-            // Final fallback: Data Source
             var result = await factory(ct);
             await SetInternalAsync(versionedKey, result, expiration, ct);
             return result;
@@ -105,12 +125,22 @@ public sealed class HybridCacheService(
         }
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// Persists the value to Redis and L1, then broadcasts an invalidation message via Redis Pub/Sub 
+    /// to notify other instances to evict the key from their local L1 caches.
+    /// </remarks>
     public async Task SetAsync<T>(string key, T value, TimeSpan? expiration, CancellationToken ct)
     {
         await SetInternalAsync(key, value, expiration, ct);
         await _subscriber.PublishAsync(InvalidationChannel, key, CommandFlags.FireAndForget);
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// Atomically increments the prefix version in Redis and clears the local version cache. 
+    /// This effectively invalidates all keys under this prefix across the distributed system.
+    /// </remarks>
     public async Task InvalidatePrefixAsync(string prefix, CancellationToken ct)
     {
         var versionKey = $"{prefix}{VersionSuffix}";
@@ -122,6 +152,7 @@ public sealed class HybridCacheService(
         await _subscriber.PublishAsync(InvalidationChannel, $"PURGE_VER:{prefix}", CommandFlags.FireAndForget);
     }
 
+    /// <inheritdoc />
     public async Task RemoveAsync(string key, CancellationToken cancellationToken)
     {
         await _l2.KeyDeleteAsync(key);
@@ -129,10 +160,14 @@ public sealed class HybridCacheService(
         await _subscriber.PublishAsync(InvalidationChannel, key, CommandFlags.FireAndForget);
     }
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// Executes a Lua script to perform a <c>SCAN</c> and <c>DEL</c> operation in Redis.
+    /// <para>Warning: This is an O(N) operation and should be used sparingly for large datasets. 
+    /// Prefer <see cref="InvalidatePrefixAsync"/> for high-frequency invalidation.</para>
+    /// </remarks>
     public async Task RemoveByPrefixAsync(string prefix, CancellationToken cancellationToken)
     {
-        // Lua script to scan and delete keys with the given prefix
-        // This is expensive; consider using version invalidation instead.
         var script = @"
             local cursor = '0'
             repeat
@@ -142,11 +177,11 @@ public sealed class HybridCacheService(
             until cursor == '0'";
 
         await _l2.ScriptEvaluateAsync(script, values: [$"{prefix}*"]);
-
-        // No need to publish – version invalidation handles logical staleness.
-        // Physical L1 cleanup is left to TTL.
     }
 
+    /// <summary>
+    /// Internal helper to serialize and store data in both cache levels.
+    /// </summary>
     private async Task SetInternalAsync<T>(string key, T value, TimeSpan? expiration, CancellationToken ct)
     {
         if (value is null) return;
@@ -165,6 +200,9 @@ public sealed class HybridCacheService(
         l1.Set(key, value, _l1ShortTtl);
     }
 
+    /// <summary>
+    /// Retrieves the current version number for a prefix from L1 or L2.
+    /// </summary>
     private async ValueTask<long> GetPrefixVersionAsync(string prefix, CancellationToken ct)
     {
         var versionKey = $"{prefix}{VersionSuffix}";
@@ -179,6 +217,9 @@ public sealed class HybridCacheService(
         return version;
     }
 
+    /// <summary>
+    /// Handles incoming Redis Pub/Sub messages to synchronize L1 eviction.
+    /// </summary>
     private void OnMessage(RedisChannel channel, RedisValue message)
     {
         string? msg = message;
@@ -186,7 +227,7 @@ public sealed class HybridCacheService(
 
         if (msg.StartsWith("PURGE_VER:"))
         {
-            l1.Remove($"{msg[10..]}{VersionSuffix}"); // C# Range operator for "PURGE_VER:".Length
+            l1.Remove($"{msg[10..]}{VersionSuffix}");
         }
         else
         {
@@ -194,6 +235,10 @@ public sealed class HybridCacheService(
         }
     }
 
+    /// <summary>
+    /// Releases the resources used by the <see cref="HybridCacheService"/>, 
+    /// including semaphores and Redis subscriptions.
+    /// </summary>
     public void Dispose()
     {
         if (_isSubscribed)
