@@ -27,7 +27,7 @@ public sealed class HybridCacheService(
 {
     private readonly IDatabase _l2 = redis.GetDatabase();
     private readonly ISubscriber _subscriber = redis.GetSubscriber();
-    private readonly SemaphoreSlim[] _locks = [.. Enumerable.Range(0, lockCount).Select(_ => new SemaphoreSlim(1, 1))];
+    private readonly SemaphoreSlim[] _locks = CreateLocks(lockCount);
 
     private readonly TimeSpan _l1ShortTtl = TimeSpan.FromMinutes(2);
     private readonly TimeSpan _l1VersionTtl = TimeSpan.FromMinutes(10);
@@ -50,6 +50,12 @@ public sealed class HybridCacheService(
             _subscriber.Subscribe(InvalidationChannel, OnMessage);
             _isSubscribed = true;
         }
+    }
+
+    private static SemaphoreSlim[] CreateLocks(int lockCount)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(lockCount);
+        return [.. Enumerable.Range(0, lockCount).Select(_ => new SemaphoreSlim(1, 1))];
     }
 
     /// <inheritdoc />
@@ -178,16 +184,26 @@ public sealed class HybridCacheService(
     /// </remarks>
     public async Task RemoveByPrefixAsync(string prefix, CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(prefix))
+            throw new ArgumentException("Prefix must be a non-empty value.", nameof(prefix));
+
+        if (prefix.IndexOfAny(['*', '?', '[', ']']) >= 0)
+            throw new ArgumentException("Prefix must not contain Redis glob metacharacters.", nameof(prefix));
+
+        var versionKey = $"{prefix}{VersionSuffix}";
+
         var script = @"
             local cursor = '0'
             repeat
                 local res = redis.call('SCAN', cursor, 'MATCH', ARGV[1], 'COUNT', 100)
                 cursor = res[1]
                 for i, key in ipairs(res[2]) do redis.call('DEL', key) end
-            until cursor == '0'";
-
-        await _l2.ScriptEvaluateAsync(script, values: [$"{prefix}*"]);
-        await InvalidatePrefixAsync(prefix, cancellationToken);
+            until cursor == '0'
+            return redis.call('INCR', ARGV[2])";
+        
+        await _l2.ScriptEvaluateAsync(script, values: [$"{prefix}*", versionKey]);
+        l1.Remove(versionKey);
+        await _subscriber.PublishAsync(InvalidationChannel, $"PURGE_VER:{prefix}", CommandFlags.FireAndForget);
     }
 
     /// <summary>
