@@ -1,3 +1,18 @@
+# [1.4.0](https://github.com/TheGresta/DotNet.Architect.Playbook/compare/v1.3.0...v1.4.0) (2026-03-05)
+
+
+### Bug Fixes
+
+* **redis:** [Issue [#22](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/22)] ai suggesments ([45ed496](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/45ed4966e8aed29e9baa36e6bc3188c7461e52a9))
+* **redis:** [Issue [#22](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/22)] ai suggesments 2 ([dad1eda](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/dad1edab41ef792a64ec1751d458cbdec886fa6c))
+
+
+### Features
+
+* **redis:** [Issue [#22](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/22)] code optimisations ([fa4c9ec](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/fa4c9ec111769fe69baae3f56945f1f22b1218d4))
+* **redis:** [Issue [#22](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/22)] initial system commit ([35477da](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/35477da7bef830133d82409ec0572a2fafafb9d6))
+* **redis:** [Issue [#22](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/22)] l1 l2 hybrit cache completed ([3843491](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/3843491402448ebf5f01caf6a6ba18d821a4b99f))
+
 # [1.3.0](https://github.com/TheGresta/DotNet.Architect.Playbook/compare/v1.2.0...v1.3.0) (2026-03-04)
 
 
