@@ -36,6 +36,7 @@ public sealed class HybridCacheService(
     private const string VersionSuffix = ":v";
 
     private bool _isSubscribed;
+    private readonly object _subscriptionSync = new();
 
     /// <summary>
     /// Ensures the service is subscribed to the Redis invalidation channel.
@@ -43,8 +44,12 @@ public sealed class HybridCacheService(
     private void EnsureSubscribed()
     {
         if (_isSubscribed) return;
-        _subscriber.Subscribe(InvalidationChannel, OnMessage);
-        _isSubscribed = true;
+        lock (_subscriptionSync)
+        {
+            if (_isSubscribed) return;
+            _subscriber.Subscribe(InvalidationChannel, OnMessage);
+            _isSubscribed = true;
+        }
     }
 
     /// <inheritdoc />
@@ -103,7 +108,9 @@ public sealed class HybridCacheService(
             if (l1.TryGetValue(versionedKey, out localValue))
                 return localValue!;
 
-            var data = await _l2.StringGetAsync(versionedKey);
+            var data = await resiliencePipeline.ExecuteAsync(
+                async token => await _l2.StringGetAsync(versionedKey), ct);
+
             if (data.HasValue)
             {
                 byte[]? bytes = data;
@@ -155,8 +162,11 @@ public sealed class HybridCacheService(
     /// <inheritdoc />
     public async Task RemoveAsync(string key, CancellationToken cancellationToken)
     {
-        await _l2.KeyDeleteAsync(key);
+        await resiliencePipeline.ExecuteAsync(
+            async token => await _l2.KeyDeleteAsync(key), cancellationToken);
+
         l1.Remove(key);
+
         await _subscriber.PublishAsync(InvalidationChannel, key, CommandFlags.FireAndForget);
     }
 
@@ -177,6 +187,7 @@ public sealed class HybridCacheService(
             until cursor == '0'";
 
         await _l2.ScriptEvaluateAsync(script, values: [$"{prefix}*"]);
+        await InvalidatePrefixAsync(prefix, cancellationToken);
     }
 
     /// <summary>
@@ -212,7 +223,7 @@ public sealed class HybridCacheService(
         var v = await resiliencePipeline.ExecuteAsync(
             async token => await _l2.StringGetAsync(versionKey), ct);
 
-        version = v.HasValue ? (long)v : 1L;
+        version = v.HasValue ? (long)v : 0L;
         l1.Set(versionKey, version, _l1VersionTtl);
         return version;
     }

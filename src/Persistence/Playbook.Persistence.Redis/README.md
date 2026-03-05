@@ -71,7 +71,7 @@ docker-compose up
 2. **Execute:** `dotnet run --project Playbook.Persistence.Redis`
 3. **Observe:** Send a `GET /api/products/1` request. The logs will show `Repository: GetById(1) called` (Cache Miss).
     * Send the same request again. The repository log will not appear, proving the L1/L2 cache hit.
-    * Send a `PUT /api/products/1.` This will trigger the `InvalidatePrefixAsync` method.
+    * Send a `PUT /api/products/1` request. This will trigger the `InvalidatePrefixAsync` method.
     * Send `GET /api/products/1` again. You will see the repository log reappear as the cache was invalidated across the distributed system via Pub/Sub.
 
 ## ⚖️ 5. Trade-offs & Analysis
