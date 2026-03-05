@@ -1,4 +1,10 @@
-﻿namespace Playbook.Exceptions.Domain;
+﻿using Playbook.Exceptions.Constants;
 
-public sealed class BusinessRuleException(string message, string errorCode = "BUSINESS_RULE_VIOLATION")
-    : DomainException(message, errorCode);
+namespace Playbook.Exceptions.Domain;
+
+public class BusinessRuleException(string ruleKey, params object[] args) 
+    : DomainException($"Business rule {ruleKey} was violated.", ErrorCodes.BusinessRuleViolation)
+{
+    public string RuleKey { get; } = ruleKey;
+    public object[] Args { get; } = args;
+}

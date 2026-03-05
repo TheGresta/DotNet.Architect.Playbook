@@ -1,36 +1,45 @@
-﻿using Microsoft.Extensions.Localization;
+﻿using Playbook.Exceptions.Constants;
 using Playbook.Exceptions.Domain;
-using Playbook.Exceptions.Resources.Resources;
+using Playbook.Exceptions.Localization;
 
 namespace Playbook.Exceptions.Mapping;
 
 public sealed class DomainExceptionMapper : IExceptionMapper
 {
     private readonly Dictionary<Type, Func<Exception, ExceptionMappingResult>> _mappings = [];
-    private readonly IStringLocalizer<SharedResources> _localizer;
+    private readonly ILocalizedStringProvider _stringProvider;
 
-    public DomainExceptionMapper(IStringLocalizer<SharedResources> localizer)
+    public DomainExceptionMapper(ILocalizedStringProvider stringProvider)
     {
-        _localizer = localizer;
+        _stringProvider = stringProvider;
         ConfigureMappings();
     }
 
     private void ConfigureMappings()
     {
-        // One line per exception type. Clean, scannable, and scalable.
+        // 1. Resource Not Found (404)
         Register<NotFoundException>(ex => new(
             StatusCodes.Status404NotFound,
-            _localizer["RESOURCE_NOT_FOUND"],
-            _localizer["RESOURCE_NOT_FOUND", ex.ResourceName, ex.Key],
-            ex.ErrorCode,
+            _stringProvider.Get(LocalizationKeys.NotFoundTitle),
+            _stringProvider.Get(LocalizationKeys.NotFoundTitle, ex.ResourceName, ex.Key),
+            ErrorCodes.NotFound,
             null));
 
+        // 2. Validation Errors (400)
         Register<ValidationException>(ex => new(
             StatusCodes.Status400BadRequest,
-            _localizer["VALIDATION_ERROR"],
-            _localizer["VALIDATION_ERROR"],
-            ex.ErrorCode,
-            ex.Errors.ToDictionary(k => k.Key, v => v.Value)));
+            _stringProvider.Get(LocalizationKeys.ValidationErrorTitle),
+            _stringProvider.Get(LocalizationKeys.ValidationErrorTitle),
+            ErrorCodes.ValidationError,
+            ex.Errors));
+
+        // 3. Business Rule Violations (422)
+        Register<BusinessRuleException>(ex => new(
+            StatusCodes.Status422UnprocessableEntity,
+            _stringProvider.Get(LocalizationKeys.BusinessRuleTitle),
+             _stringProvider.Get(ex.RuleKey, ex.Args),
+            ex.RuleKey,
+            null));
     }
 
     private void Register<TException>(Func<TException, ExceptionMappingResult> mapper)
@@ -47,12 +56,12 @@ public sealed class DomainExceptionMapper : IExceptionMapper
             return mapper(exception);
         }
 
-        // Fallback for any other DomainException not explicitly registered
+        // Catch-all for any DomainException not explicitly registered
         return new(
             StatusCodes.Status422UnprocessableEntity,
-            _localizer["BUSINESS_RULE_VIOLATION"],
+            _stringProvider.Get(LocalizationKeys.BusinessRuleTitle),
             exception.Message,
-            "BUSINESS_RULE_VIOLATION",
+            ErrorCodes.BusinessRuleViolation,
             null);
     }
 }

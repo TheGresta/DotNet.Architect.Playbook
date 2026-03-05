@@ -1,4 +1,6 @@
-﻿using Playbook.Exceptions.Mapping;
+﻿using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Playbook.Exceptions.Localization;
+using Playbook.Exceptions.Mapping;
 
 namespace Playbook.Exceptions;
 
@@ -10,12 +12,15 @@ public static class DependencyInjection
         services.AddProblemDetails();
 
         // 2. Localization Configuration
-        services.AddLocalization(options => options.ResourcesPath = "Resources");
+        services.AddLocalization();
 
         // 3. Register the Global Exception Handler
         services.AddExceptionHandler<GlobalExceptionHandler>();
 
         services.AddSingleton<IExceptionMapper, DomainExceptionMapper>();
+        services.AddSingleton<ILocalizedStringProvider, LocalizedStringProvider>();
+
+        services.AddSingleton<ProblemDetailsFactory, GlobalProblemDetailsFactory>();
 
         return services;
     }

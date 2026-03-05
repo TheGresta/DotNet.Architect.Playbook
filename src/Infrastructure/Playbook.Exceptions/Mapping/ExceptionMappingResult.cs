@@ -5,4 +5,4 @@ int StatusCode,
 string Title,
 string Detail,
 string ErrorCode,
-IDictionary<string, string[]>? ValidationErrors);
+IEnumerable<KeyValuePair<string, string[]>>? ValidationErrors);

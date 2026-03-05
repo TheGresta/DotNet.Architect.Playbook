@@ -2,9 +2,11 @@
 
 namespace Playbook.Exceptions;
 
-public sealed class ApiErrorResponse : ProblemDetails
+public sealed class ApiErrorResponse : ValidationProblemDetails
 {
     public string? ErrorCode { get; init; }
-
-    public IDictionary<string, string[]>? Errors { get; init; }
+    public string? TraceId { get; init; }
+    public DebugDetails? Debug { get; init; }
 }
+
+public sealed record DebugDetails(string Message, string? StackTrace, DebugDetails? InnerError);
