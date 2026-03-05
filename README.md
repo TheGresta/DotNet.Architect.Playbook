@@ -42,8 +42,7 @@ Below is the comprehensive directory of architectural chapters. Each module is a
 | ✅ | **Document Store** | MongoDB | [📖 Readme](./src/Persistence/Playbook.Persistence.MongoDB/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3AmongoDb) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3AmongoDb) |
 | ✅ | **Relational Data** | EF Core | [📖 Readme](./src/Persistence/Playbook.Persistence.EntityFramework/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Aefcore) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Aefcore) |
 | ✅ | **Distributed Cache** | Redis (Stack) | [📖 Readme](./src/Persistence/Playbook.Persistence.Redis/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Aredis) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Aredis) |
-| ✅ | **Distributed Cache** | Redis (Stack) | [📖 Readme](./src/Persistence/Playbook.Persistence.Redis/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Aredis) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Aredis) |
-| 🚧 | **Hybrid Caching** | .NET 9 HybridCache & Redis | [📖 Readme](./src/Persistence/Playbook.Persistence.HybridCache/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Ahybrid-cache) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Ahybrid-cache) |
+| 📅 | **Hybrid Caching** | .NET 9 HybridCache & Redis | [📖 Readme](./src/Persistence/Playbook.Persistence.HybridCache/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Ahybrid-cache) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Ahybrid-cache) |
 
 ### 📨 Messaging & Integration
 *Patterns for decoupled communication and event-driven choreography.*
@@ -59,8 +58,9 @@ Below is the comprehensive directory of architectural chapters. Each module is a
 
 | Status | Chapter Name | Technology Focus | Documentation | Tracking |
 | :---: | :--- | :--- | :--- | :--- |
-| 📅 | **CQRS Pattern** | MediatR | [📖 Readme](./src/Architecture/Playbook.Architecture.CQRS/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Acqrs) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Acqrs) |
-| 📅 | **Validation** | FluentValidation | [📖 Readme](./src/Validation/Playbook.Validation.FluentValidation/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Avalidation) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Avalidation) |
+| 📅 | **CQRS Pattern** | MediatR | [📖 Readme](./src/Infrastructure/Playbook.Architecture.CQRS/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Acqrs) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Acqrs) |
+| 📅 | **Validation** | FluentValidation | [📖 Readme](./src/Infrastructure/Playbook.Validation.FluentValidation/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Avalidation) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Avalidation) |
+| 🚧 | **Exception Handling** | Custom Exception Framework | [📖 Readme](./src/Infrastructure/Playbook.Exceptions/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3AexceptionHandling) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3AexceptionHandling) |
 
 ### 🤖 AI & Semantic Engineering
 *Integrating LLMs and Vector Search into .NET applications.*
