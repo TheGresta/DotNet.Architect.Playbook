@@ -4,15 +4,18 @@
 
 [![Build Status](https://github.com/TheGresta/DotNet.Architect.Playbook/actions/workflows/pr-integrity.yml/badge.svg)](https://github.com/TheGresta/DotNet.Architect.Playbook/actions)
 [![Version](https://img.shields.io/github/v/release/TheGresta/DotNet.Architect.Playbook?color=blue&logo=github)](https://github.com/TheGresta/DotNet.Architect.Playbook/releases)
-[![Framework](https://img.shields.io/badge/.NET-8.0-blueviolet)](https://dotnet.microsoft.com/download/dotnet/8.0)
+[![.NET Version](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](#)
 [![License](https://img.shields.io/github/license/TheGresta/DotNet.Architect.Playbook?color=orange)](LICENSE)
 [![Semantic Release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
-[![Repository Size](https://img.shields.io/github/repo-size/TheGresta/DotNet.Architect.Playbook?color=success)](https://github.com/TheGresta/DotNet.Architect.Playbook)
-[![Last Commit](https://img.shields.io/github/last-commit/TheGresta/DotNet.Architect.Playbook?color=success)](https://github.com/TheGresta/DotNet.Architect.Playbook/commits/main)
-[![Open Issues](https://img.shields.io/github/issues/TheGresta/DotNet.Architect.Playbook)](https://github.com/TheGresta/DotNet.Architect.Playbook/issues)
-[![Pull Requests](https://img.shields.io/github/issues-pr/TheGresta/DotNet.Architect.Playbook)](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls)
+
+[![Repository Size](https://img.shields.io/github/repo-size/TheGresta/DotNet.Architect.Playbook?color=success)](#)
+[![Last Commit](https://img.shields.io/github/last-commit/TheGresta/DotNet.Architect.Playbook?color=success)](#)
+[![Open Issues](https://img.shields.io/github/issues/TheGresta/DotNet.Architect.Playbook)](#)
+[![Pull Requests](https://img.shields.io/github/issues-pr/TheGresta/DotNet.Architect.Playbook)](#)
 
 *Building scalable, maintainable, and enterprise-grade .NET applications.*
+
+
 
 </div>
 
@@ -38,7 +41,9 @@ Below is the comprehensive directory of architectural chapters. Each module is a
 | ✅ | **Search Engine** | Elasticsearch | [📖 Readme](./src/Persistence/Playbook.Persistence.ElasticSearch/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Aelasticsearch) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Aelasticsearch) |
 | ✅ | **Document Store** | MongoDB | [📖 Readme](./src/Persistence/Playbook.Persistence.MongoDB/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3AmongoDb) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3AmongoDb) |
 | ✅ | **Relational Data** | EF Core | [📖 Readme](./src/Persistence/Playbook.Persistence.EntityFramework/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Aefcore) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Aefcore) |
-| 🚧 | **Distributed Cache** | Redis (Stack) | [📖 Readme](./src/Persistence/Playbook.Persistence.Redis/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Aredis) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Aredis) |
+| ✅ | **Distributed Cache** | Redis (Stack) | [📖 Readme](./src/Persistence/Playbook.Persistence.Redis/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Aredis) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Aredis) |
+| ✅ | **Distributed Cache** | Redis (Stack) | [📖 Readme](./src/Persistence/Playbook.Persistence.Redis/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Aredis) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Aredis) |
+| 🚧 | **Hybrid Caching** | .NET 9 HybridCache & Redis | [📖 Readme](./src/Persistence/Playbook.Persistence.HybridCache/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Ahybrid-cache) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Ahybrid-cache) |
 
 ### 📨 Messaging & Integration
 *Patterns for decoupled communication and event-driven choreography.*
