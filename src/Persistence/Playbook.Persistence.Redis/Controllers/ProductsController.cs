@@ -6,99 +6,87 @@ namespace Playbook.Persistence.Redis.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ProductsController : ControllerBase
+public sealed class ProductsController(
+    ICacheService cache,
+    IProductRepository repository) : ControllerBase
 {
-    private readonly ICacheService _cache;
-    private readonly IProductRepository _repository;
-    private readonly ILogger<ProductsController> _logger;
+    private const string CachePrefix = "products";
+    private static readonly TimeSpan DefaultTtl = TimeSpan.FromMinutes(5);
 
-    public ProductsController(
-        ICacheService cache,
-        IProductRepository repository,
-        ILogger<ProductsController> logger)
-    {
-        _cache = cache;
-        _repository = repository;
-        _logger = logger;
-    }
-
-    // GET: api/products/{id}
-    [HttpGet("{id}")]
+    [HttpGet("{id:int}")]
     public async Task<ActionResult<ProductDto>> GetById(int id, CancellationToken ct)
     {
-        var product = await _cache.GetOrSetAsync(
-            "products",
-            id.ToString(),
-            async token =>
-            {
-                // This factory runs only on cache miss
-                var p = await _repository.GetByIdAsync(id, token);
-                return p ?? throw new KeyNotFoundException($"Product {id} not found");
-            },
-            expiration: TimeSpan.FromMinutes(5),
-            cancellationToken: ct);
+        try
+        {
+            var product = await cache.GetOrSetAsync(
+                CachePrefix,
+                id.ToString(),
+                async token => await repository.GetByIdAsync(id, token)
+                               ?? throw new HttpRequestException("Not Found", null, System.Net.HttpStatusCode.NotFound),
+                DefaultTtl,
+                ct);
 
-        return Ok(product);
+            return Ok(product);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return NotFound($"Product with ID {id} not found.");
+        }
     }
 
-    // GET: api/products
     [HttpGet]
     public async Task<ActionResult<List<ProductDto>>> GetAll(CancellationToken ct)
     {
-        var products = await _cache.GetOrSetAsync(
-            "products",
+        var products = await cache.GetOrSetAsync(
+            CachePrefix,
             "all",
-            async token =>
-            {
-                // Cache miss – fetch from repository
-                return await _repository.GetAllAsync(token);
-            },
-            expiration: TimeSpan.FromMinutes(5),
-            cancellationToken: ct);
+            token => repository.GetAllAsync(token),
+            DefaultTtl,
+            ct);
 
         return Ok(products);
     }
 
-    // POST: api/products
     [HttpPost]
     public async Task<ActionResult<ProductDto>> Create(ProductDto product, CancellationToken ct)
     {
-        var created = await _repository.CreateAsync(product, ct);
+        var created = await repository.CreateAsync(product, ct);
 
-        // Invalidate the entire products prefix because the list changed
-        await _cache.InvalidatePrefixAsync("products", ct);
+        // O(1) Versioned Invalidation: Instantly makes "all" and individual product caches stale
+        await cache.InvalidatePrefixAsync(CachePrefix, ct);
 
-        // Optionally also remove the specific key if it existed (but prefix invalidation already does that logically)
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
-    // PUT: api/products/{id}
-    [HttpPut("{id}")]
+    [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, ProductDto product, CancellationToken ct)
     {
         if (id != product.Id)
-            return BadRequest("ID mismatch");
+        {
+            return BadRequest("ID mismatch between route and body.");
+        }
 
-        var updated = await _repository.UpdateAsync(product, ct);
-        if (updated == null)
+        var updated = await repository.UpdateAsync(product, ct);
+        if (updated is null)
+        {
             return NotFound();
+        }
 
-        // Invalidate the products prefix (list and possibly this product)
-        await _cache.InvalidatePrefixAsync("products", ct);
+        await cache.InvalidatePrefixAsync(CachePrefix, ct);
 
         return NoContent();
     }
 
-    // DELETE: api/products/{id}
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        var deleted = await _repository.DeleteAsync(id, ct);
+        var deleted = await repository.DeleteAsync(id, ct);
         if (!deleted)
+        {
             return NotFound();
+        }
 
-        // Invalidate the products prefix
-        await _cache.InvalidatePrefixAsync("products", ct);
+        await cache.InvalidatePrefixAsync(CachePrefix, ct);
 
         return NoContent();
     }

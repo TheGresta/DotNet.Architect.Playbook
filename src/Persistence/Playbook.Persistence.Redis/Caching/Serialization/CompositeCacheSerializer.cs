@@ -21,6 +21,7 @@ public sealed class CompositeCacheSerializer : ICacheSerializer
 
     public void Serialize<T>(IBufferWriter<byte> writer, T value)
     {
+        ArgumentNullException.ThrowIfNull(writer);
         using var jsonWriter = new Utf8JsonWriter(writer);
         JsonSerializer.Serialize(jsonWriter, value, Options);
     }
@@ -28,6 +29,14 @@ public sealed class CompositeCacheSerializer : ICacheSerializer
     public T? Deserialize<T>(ReadOnlySpan<byte> bytes)
     {
         if (bytes.IsEmpty) return default;
-        return JsonSerializer.Deserialize<T>(bytes, Options);
+
+        try
+        {
+            return JsonSerializer.Deserialize<T>(bytes, Options);
+        }
+        catch (JsonException)
+        {
+            return default;
+        }
     }
 }

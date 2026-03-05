@@ -6,5 +6,6 @@ namespace Playbook.Persistence.Redis.Caching.Serialization;
 // --- Catalog Module Context ---
 [JsonSerializable(typeof(ProductDto))]
 [JsonSerializable(typeof(List<ProductDto>))]
-[JsonSerializable(typeof(CacheEnvelope<ProductDto>))] // Required for the wrapper!
-internal partial class CatalogCacheContext : JsonSerializerContext { }
+[JsonSerializable(typeof(CacheEnvelope<ProductDto>))]
+[JsonSerializable(typeof(CacheEnvelope<List<ProductDto>>))]
+internal partial class CatalogCacheContext : JsonSerializerContext;

@@ -6,108 +6,97 @@ using StackExchange.Redis;
 
 namespace Playbook.Persistence.Redis.Caching;
 
-public sealed class HybridCacheService : ICacheService, IDisposable
+public sealed class HybridCacheService(
+    IMemoryCache l1,
+    IConnectionMultiplexer redis,
+    ICacheSerializer serializer,
+    [FromKeyedServices("redis-strategy")] ResiliencePipeline resiliencePipeline,
+    int lockCount = 256) : ICacheService, IDisposable
 {
-    private readonly IMemoryCache _l1;
-    private readonly IDatabase _l2;
-    private readonly ISubscriber _subscriber;
-    private readonly ICacheSerializer _serializer;
-    private readonly ResiliencePipeline _resiliencePipeline;
-    private readonly int _lockCount;
-    private readonly SemaphoreSlim[] _locks;
+    private readonly IDatabase _l2 = redis.GetDatabase();
+    private readonly ISubscriber _subscriber = redis.GetSubscriber();
+    private readonly SemaphoreSlim[] _locks = [.. Enumerable.Range(0, lockCount).Select(_ => new SemaphoreSlim(1, 1))];
+
     private readonly TimeSpan _l1ShortTtl = TimeSpan.FromMinutes(2);
     private readonly TimeSpan _l1VersionTtl = TimeSpan.FromMinutes(10);
 
     private const string InvalidationChannel = "cache:invalidation";
     private const string VersionSuffix = ":v";
 
-    public HybridCacheService(
-        IMemoryCache l1,
-        IConnectionMultiplexer redis,
-        ICacheSerializer serializer,
-        [FromKeyedServices("redis-strategy")] ResiliencePipeline resiliencePipeline,
-        int lockCount = 256) // Configurable lock count
-    {
-        _l1 = l1;
-        _l2 = redis.GetDatabase();
-        _subscriber = redis.GetSubscriber();
-        _serializer = serializer;
-        _resiliencePipeline = resiliencePipeline;
-        _lockCount = lockCount;
-        _locks = [.. Enumerable.Range(0, _lockCount).Select(_ => new SemaphoreSlim(1, 1))];
+    // Initialize subscription in a controlled manner
+    private bool _isSubscribed;
 
-        // Subscribe to invalidation messages
+    private void EnsureSubscribed()
+    {
+        if (_isSubscribed) return;
         _subscriber.Subscribe(InvalidationChannel, OnMessage);
+        _isSubscribed = true;
     }
 
-    public async ValueTask<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default)
+    public async ValueTask<T?> GetAsync<T>(string key, CancellationToken ct)
     {
-        // L1 hit
-        if (_l1.TryGetValue(key, out T? localValue))
+        EnsureSubscribed();
+
+        // Path 1: L1 Fast-Hit
+        if (l1.TryGetValue(key, out T? localValue))
             return localValue;
 
-        // L2 hit with resilience
-        return await _resiliencePipeline.ExecuteAsync(async ct =>
+        // Path 2: L2 with Resilience
+        return await resiliencePipeline.ExecuteAsync(async token =>
         {
             var data = await _l2.StringGetAsync(key);
             if (!data.HasValue) return default;
 
-            ReadOnlyMemory<byte> memory = data;
-            var value = _serializer.Deserialize<T>(memory.Span);
+            byte[]? bytes = data;
+            var value = serializer.Deserialize<T>(bytes.AsSpan());
             if (value is null) return default;
 
-            // Backfill L1 with a short TTL
-            _l1.Set(key, value, _l1ShortTtl);
+            l1.Set(key, value, _l1ShortTtl);
             return value;
-        }, cancellationToken);
-    }
-
-    public async Task SetAsync<T>(string key, T value, TimeSpan? expiration = null, CancellationToken cancellationToken = default)
-    {
-        await SetInternalAsync(key, value, expiration, cancellationToken);
-
-        // Notify other instances to remove this key from their L1
-        await _subscriber.PublishAsync(InvalidationChannel, key, CommandFlags.FireAndForget);
+        }, ct);
     }
 
     public async ValueTask<T> GetOrSetAsync<T>(
-    string prefix,
-    string key,
-    Func<CancellationToken, Task<T>> factory,
-    TimeSpan? expiration = null,
-    CancellationToken cancellationToken = default)
+        string prefix,
+        string key,
+        Func<CancellationToken, Task<T>> factory,
+        TimeSpan? expiration,
+        CancellationToken ct)
     {
-        var version = await GetPrefixVersionAsync(prefix, cancellationToken);
-        var versionedKey = $"{prefix}:{version}:{key}";
+        EnsureSubscribed();
 
-        // Fast path: L1 hit
-        if (_l1.TryGetValue(versionedKey, out T? localValue))
+        long version = await GetPrefixVersionAsync(prefix, ct);
+        string versionedKey = $"{prefix}:{version}:{key}";
+
+        // Fast-path: Optimized L1 check
+        if (l1.TryGetValue(versionedKey, out T? localValue))
             return localValue!;
 
-        var lockIndex = (uint)versionedKey.GetHashCode() % (uint)_lockCount;
-        await _locks[lockIndex].WaitAsync(cancellationToken);
+        // Striped Locking to prevent Cache Stampede
+        var lockIndex = (uint)versionedKey.GetHashCode() % (uint)_locks.Length;
+        await _locks[lockIndex].WaitAsync(ct);
+
         try
         {
-            // Double-check L1 after lock
-            if (_l1.TryGetValue(versionedKey, out localValue))
+            // Double-check lock
+            if (l1.TryGetValue(versionedKey, out localValue))
                 return localValue!;
 
-            // Check L2
             var data = await _l2.StringGetAsync(versionedKey);
             if (data.HasValue)
             {
-                ReadOnlyMemory<byte> memory = data;
-                var value = _serializer.Deserialize<T>(memory.Span);
-                if (value != null)
+                byte[]? bytes = data;
+                var value = serializer.Deserialize<T>(bytes.AsSpan());
+                if (value is not null)
                 {
-                    _l1.Set(versionedKey, value, _l1ShortTtl);
+                    l1.Set(versionedKey, value, _l1ShortTtl);
                     return value;
                 }
             }
 
-            // Miss: execute factory and store
-            var result = await factory(cancellationToken);
-            await SetInternalAsync(versionedKey, result, expiration, cancellationToken);
+            // Final fallback: Data Source
+            var result = await factory(ct);
+            await SetInternalAsync(versionedKey, result, expiration, ct);
             return result;
         }
         finally
@@ -116,29 +105,31 @@ public sealed class HybridCacheService : ICacheService, IDisposable
         }
     }
 
-    public async Task InvalidatePrefixAsync(string prefix, CancellationToken cancellationToken = default)
+    public async Task SetAsync<T>(string key, T value, TimeSpan? expiration, CancellationToken ct)
     {
-        var versionKey = $"{prefix}{VersionSuffix}";
-
-        // Atomically increment the version in Redis
-        await _resiliencePipeline.ExecuteAsync(async ct =>
-            await _l2.StringIncrementAsync(versionKey), cancellationToken);
-
-        // Remove the local version cache entry
-        _l1.Remove(versionKey);
-
-        // Notify other instances to purge their version cache
-        await _subscriber.PublishAsync(InvalidationChannel, $"PURGE_VER:{prefix}", CommandFlags.FireAndForget);
-    }
-
-    public async Task RemoveAsync(string key, CancellationToken cancellationToken = default)
-    {
-        await _l2.KeyDeleteAsync(key);
-        _l1.Remove(key);
+        await SetInternalAsync(key, value, expiration, ct);
         await _subscriber.PublishAsync(InvalidationChannel, key, CommandFlags.FireAndForget);
     }
 
-    public async Task RemoveByPrefixAsync(string prefix, CancellationToken cancellationToken = default)
+    public async Task InvalidatePrefixAsync(string prefix, CancellationToken ct)
+    {
+        var versionKey = $"{prefix}{VersionSuffix}";
+
+        await resiliencePipeline.ExecuteAsync(
+            async token => await _l2.StringIncrementAsync(versionKey), ct);
+
+        l1.Remove(versionKey);
+        await _subscriber.PublishAsync(InvalidationChannel, $"PURGE_VER:{prefix}", CommandFlags.FireAndForget);
+    }
+
+    public async Task RemoveAsync(string key, CancellationToken cancellationToken)
+    {
+        await _l2.KeyDeleteAsync(key);
+        l1.Remove(key);
+        await _subscriber.PublishAsync(InvalidationChannel, key, CommandFlags.FireAndForget);
+    }
+
+    public async Task RemoveByPrefixAsync(string prefix, CancellationToken cancellationToken)
     {
         // Lua script to scan and delete keys with the given prefix
         // This is expensive; consider using version invalidation instead.
@@ -156,62 +147,60 @@ public sealed class HybridCacheService : ICacheService, IDisposable
         // Physical L1 cleanup is left to TTL.
     }
 
-    private async Task SetInternalAsync<T>(string key, T value, TimeSpan? expiration, CancellationToken cancellationToken)
+    private async Task SetInternalAsync<T>(string key, T value, TimeSpan? expiration, CancellationToken ct)
     {
         if (value is null) return;
 
         var bufferWriter = new ArrayBufferWriter<byte>(256);
-        _serializer.Serialize(bufferWriter, value);
+        serializer.Serialize(bufferWriter, value);
 
-        await _resiliencePipeline.ExecuteAsync(async ct =>
+        await resiliencePipeline.ExecuteAsync(async token =>
         {
             await _l2.StringSetAsync(
                 key,
-                bufferWriter.WrittenMemory,   // Implicitly converts to RedisValue
-                expiration ?? TimeSpan.FromHours(24),
-                When.Always);
-        }, cancellationToken);
+                bufferWriter.WrittenMemory,
+                expiration ?? TimeSpan.FromHours(24));
+        }, ct);
 
-        // Backfill L1 with a short TTL
-        _l1.Set(key, value, _l1ShortTtl);
+        l1.Set(key, value, _l1ShortTtl);
     }
 
-    private async ValueTask<long> GetPrefixVersionAsync(string prefix, CancellationToken cancellationToken)
+    private async ValueTask<long> GetPrefixVersionAsync(string prefix, CancellationToken ct)
     {
         var versionKey = $"{prefix}{VersionSuffix}";
-        if (_l1.TryGetValue(versionKey, out long version))
+        if (l1.TryGetValue(versionKey, out long version))
             return version;
 
-        var v = await _resiliencePipeline.ExecuteAsync(async ct =>
-            await _l2.StringGetAsync(versionKey), cancellationToken);
+        var v = await resiliencePipeline.ExecuteAsync(
+            async token => await _l2.StringGetAsync(versionKey), ct);
 
         version = v.HasValue ? (long)v : 1L;
-        _l1.Set(versionKey, version, _l1VersionTtl);
+        l1.Set(versionKey, version, _l1VersionTtl);
         return version;
     }
 
     private void OnMessage(RedisChannel channel, RedisValue message)
     {
-        var msg = message.ToString();
+        string? msg = message;
         if (string.IsNullOrEmpty(msg)) return;
 
         if (msg.StartsWith("PURGE_VER:"))
         {
-            // Remove version key from L1
-            var prefix = msg.Replace("PURGE_VER:", "");
-            _l1.Remove($"{prefix}{VersionSuffix}");
+            l1.Remove($"{msg[10..]}{VersionSuffix}"); // C# Range operator for "PURGE_VER:".Length
         }
         else
         {
-            // Remove a specific key from L1
-            _l1.Remove(msg);
+            l1.Remove(msg);
         }
     }
 
     public void Dispose()
     {
-        _subscriber.Unsubscribe(InvalidationChannel);
-        foreach (var semaphore in _locks)
-            semaphore.Dispose();
+        if (_isSubscribed)
+        {
+            _subscriber.Unsubscribe(InvalidationChannel, OnMessage);
+        }
+
+        foreach (var semaphore in _locks) semaphore.Dispose();
     }
 }

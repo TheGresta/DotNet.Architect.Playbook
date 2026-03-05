@@ -2,21 +2,24 @@
 
 public interface ICacheService
 {
-    // Simple key-value operations (bypass versioning – use with care)
-    ValueTask<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default);
-    Task SetAsync<T>(string key, T value, TimeSpan? expiration = null, CancellationToken cancellationToken = default);
-    Task RemoveAsync(string key, CancellationToken cancellationToken = default);
+    ValueTask<T?> GetAsync<T>(string key, CancellationToken ct = default);
 
-    // Versioned prefix operations (recommended)
+    Task SetAsync<T>(
+        string key,
+        T value,
+        TimeSpan? absoluteExpiration = null,
+        CancellationToken ct = default);
+
+    Task RemoveAsync(string key, CancellationToken ct = default);
+
     ValueTask<T> GetOrSetAsync<T>(
         string prefix,
         string key,
         Func<CancellationToken, Task<T>> factory,
-        TimeSpan? expiration = null,
-        CancellationToken cancellationToken = default);
+        TimeSpan? absoluteExpiration = null,
+        CancellationToken ct = default);
 
-    Task InvalidatePrefixAsync(string prefix, CancellationToken cancellationToken = default);
+    Task InvalidatePrefixAsync(string prefix, CancellationToken ct = default);
 
-    // Physical deletion by prefix (expensive, use sparingly)
-    Task RemoveByPrefixAsync(string prefix, CancellationToken cancellationToken = default);
+    Task RemoveByPrefixAsync(string prefix, CancellationToken ct = default);
 }
