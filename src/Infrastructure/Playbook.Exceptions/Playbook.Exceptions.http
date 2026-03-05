@@ -1,0 +1,6 @@
+@Playbook.Exceptions_HostAddress = http://localhost:5122
+
+GET {{Playbook.Exceptions_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
