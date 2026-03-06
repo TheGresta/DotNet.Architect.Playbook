@@ -117,28 +117,21 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="BUSINESS_RULE_TITLE" xml:space="preserve">
-    <value>Business Rule Violation</value>
-    <comment>The generic header for 422 errors.</comment>
+  <data name="BUSINESS_RULE" xml:space="preserve">
+    <value>İş Kuralı İhlali</value>
+    <comment>İş Kuralı İhlali</comment>
   </data>
-  <data name="INSUFFICIENT_FUNDS" xml:space="preserve">
-    <value>You need {0} {1} more to complete this transaction.</value>
-    <comment>Uses {0} for amount and {1} for currency.</comment>
+  <data name="INTERNAL_SERVER" xml:space="preserve">
+    <value>Sunucu Hatası</value>
+    <comment>Sunucu Hatası</comment>
   </data>
-  <data name="INTERNAL_SERVER_TITLE" xml:space="preserve">
-    <value>Internal Server Error</value>
-    <comment>The fallback title when all else fails.</comment>
+  <data name="NOT_FOUND" xml:space="preserve">
+    <value>Kaynak Bulunamadı</value>
   </data>
-  <data name="RESOURCE_NOT_FOUND_DETAIL" xml:space="preserve">
-    <value>{0} with ID '{1}' was not found.</value>
-    <comment>Important: This is where your previous crash was. It needs {0} and {1}.</comment>
+  <data name="UNAUTHORIZED" xml:space="preserve">
+    <value>Yetkisiz Erişim</value>
   </data>
-  <data name="RESOURCE_NOT_FOUND_TITLE" xml:space="preserve">
-    <value>Resource Not Found</value>
-    <comment>The header for 404 errors.</comment>
-  </data>
-  <data name="VALIDATION_ERROR_TITLE" xml:space="preserve">
-    <value>Validation Error</value>
-    <comment>The header for 400 errors.</comment>
+  <data name="VALIDATION_ERROR" xml:space="preserve">
+    <value>Doğrulama Hatası</value>
   </data>
 </root>

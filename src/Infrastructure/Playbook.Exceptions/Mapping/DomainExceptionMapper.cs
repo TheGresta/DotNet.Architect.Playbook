@@ -17,29 +17,47 @@ public sealed class DomainExceptionMapper : IExceptionMapper
 
     private void ConfigureMappings()
     {
-        // 1. Resource Not Found (404)
-        Register<NotFoundException>(ex => new(
+        // 1. Dynamic NotFound (Uses INF_ and DET_ protocols)
+        Register<NotFoundException>(ex => new ExceptionMappingResult(
             StatusCodes.Status404NotFound,
-            _stringProvider.Get(LocalizationKeys.NotFoundTitle),
-            _stringProvider.Get(LocalizationKeys.NotFoundTitle, ex.ResourceName, ex.Key),
-            ErrorCodes.NotFound,
+            _stringProvider.Get(TitleKeys.NotFound),
+            // Nested Translation: First translate the Resource (RES_), 
+            // then inject it into the Detail template (DET_).
+            _stringProvider.Get(DetailKeys.NotFound,
+                _stringProvider.Get(ex.ResourceName), ex.Key),
+            ex.ErrorCode,
             null));
 
-        // 2. Validation Errors (400)
-        Register<ValidationException>(ex => new(
-            StatusCodes.Status400BadRequest,
-            _stringProvider.Get(LocalizationKeys.ValidationErrorTitle),
-            _stringProvider.Get(LocalizationKeys.ValidationErrorTitle),
-            ErrorCodes.ValidationError,
-            ex.Errors));
-
-        // 3. Business Rule Violations (422)
-        Register<BusinessRuleException>(ex => new(
+        // 2. Dynamic Business Rules (Uses INF_ and RULE_ protocols)
+        Register<BusinessRuleException>(ex => new ExceptionMappingResult(
             StatusCodes.Status422UnprocessableEntity,
-            _stringProvider.Get(LocalizationKeys.BusinessRuleTitle),
-             _stringProvider.Get(ex.RuleKey, ex.Args),
-            ex.RuleKey,
+            _stringProvider.Get(TitleKeys.BusinessRule),
+            _stringProvider.Get(ex.RuleKey, ex.Args), // Dynamic RULE_ lookup
+            ex.RuleKey, // We use the specific rule key as the error code for the frontend
             null));
+
+        // 3. Dynamic Validation (Uses INF_ and VAL_ protocols)
+        Register<ValidationException>(ex =>
+        {
+            var localizedErrors = new Dictionary<string, string[]>();
+
+            foreach (var error in ex.Errors)
+            {
+                // Each key in the list is a VAL_ key (e.g., VAL_REQUIRED)
+                var translatedMessages = error.Value
+                    .Select(msgKey => _stringProvider.Get(msgKey))
+                    .ToArray();
+
+                localizedErrors.Add(error.Key, translatedMessages);
+            }
+
+            return new ExceptionMappingResult(
+                StatusCodes.Status400BadRequest,
+                _stringProvider.Get(TitleKeys.ValidationError),
+                _stringProvider.Get(DetailKeys.ValidationSummary),
+                ex.ErrorCode,
+                localizedErrors);
+        });
     }
 
     private void Register<TException>(Func<TException, ExceptionMappingResult> mapper)
@@ -56,11 +74,12 @@ public sealed class DomainExceptionMapper : IExceptionMapper
             return mapper(exception);
         }
 
-        // Catch-all for any DomainException not explicitly registered
+        // Catch-all for any DomainException not explicitly registered 
+        // Uses the SharedResources fallback via the Smart Router
         return new(
             StatusCodes.Status422UnprocessableEntity,
-            _stringProvider.Get(LocalizationKeys.BusinessRuleTitle),
-            exception.Message,
+            _stringProvider.Get(TitleKeys.BusinessRule),
+            _stringProvider.Get(ErrorCodes.ActionFailed),
             ErrorCodes.BusinessRuleViolation,
             null);
     }

@@ -1,12 +1,13 @@
 ﻿using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.Extensions.Localization;
 using Playbook.Exceptions.Constants;
+using Playbook.Exceptions.Localization;
 using Playbook.Exceptions.Mapping;
 
 namespace Playbook.Exceptions;
 public sealed class GlobalExceptionHandler(
     IEnumerable<IExceptionMapper> mappers,
-    IStringLocalizer<SharedResources> localizer,
+    ILocalizedStringProvider stringProvider, // Swapped for our smart provider
     ILogger<GlobalExceptionHandler> logger,
     IHostEnvironment env)
     : IExceptionHandler
@@ -20,12 +21,14 @@ public sealed class GlobalExceptionHandler(
         {
             var traceId = httpContext.TraceIdentifier;
 
-            // Find a mapper that supports this exception, or fallback to default
+            // 1. Resolve Mapping
             var mapper = mappers.FirstOrDefault(x => x.CanMap(exception));
             var details = mapper?.Map(exception) ?? GetDefaultDetails();
 
+            // 2. Logging based on Severity logic
             LogWithCorrectSeverity(exception, details.StatusCode, traceId);
 
+            // 3. Build RFC 7807 Response
             var response = new ApiErrorResponse
             {
                 Status = details.StatusCode,
@@ -34,7 +37,7 @@ public sealed class GlobalExceptionHandler(
                 ErrorCode = details.ErrorCode,
                 Instance = httpContext.Request.Path,
                 TraceId = traceId,
-                Debug = env.IsDevelopment() ? CreateDebugDetails(exception) : null
+                Debug = null//env.IsDevelopment() ? CreateDebugDetails(exception) : null
             };
 
             if (details.ValidationErrors is not null)
@@ -48,6 +51,7 @@ public sealed class GlobalExceptionHandler(
                 }
             }
 
+            // 4. Send Response
             httpContext.Response.StatusCode = details.StatusCode;
             httpContext.Response.Headers["X-Trace-Id"] = traceId;
 
@@ -57,32 +61,21 @@ public sealed class GlobalExceptionHandler(
         }
         catch (Exception secondaryException)
         {
-            // --- THE SAFE-FAIL FALLBACK ---
-            // If we are here, our error handler CRASHED. 
-            // We do NOT use any injected services here (no logger, no localizer).
+            // CRITICAL: The handler itself failed. Execute Safe-Fail protocol.
             return await HandleSafeFailAsync(httpContext, secondaryException, cancellationToken);
         }
     }
 
     private void LogWithCorrectSeverity(Exception exception, int statusCode, string traceId)
     {
-        const string messageTemplate = "An error occurred [TraceId: {TraceId}]: {Message}";
+        const string template = "Exception occurred [TraceId: {TraceId}]: {Message}";
 
         if (statusCode >= 500)
-        {
-            // Actual server failures need immediate attention
-            logger.LogError(exception, messageTemplate, traceId, exception.Message);
-        }
-        else if (statusCode == StatusCodes.Status401Unauthorized || statusCode == StatusCodes.Status403Forbidden)
-        {
-            // Security-related events are important but expected
-            logger.LogWarning(messageTemplate, traceId, exception.Message);
-        }
+            logger.LogError(exception, template, traceId, exception.Message);
+        else if (statusCode is StatusCodes.Status401Unauthorized or StatusCodes.Status403Forbidden)
+            logger.LogWarning(template, traceId, exception.Message);
         else
-        {
-            // 400s and 404s are just part of regular API traffic
-            logger.LogInformation(messageTemplate, traceId, exception.Message);
-        }
+            logger.LogInformation(template, traceId, exception.Message);
     }
 
     private static DebugDetails CreateDebugDetails(Exception ex) =>
@@ -92,32 +85,28 @@ public sealed class GlobalExceptionHandler(
 
     private ExceptionMappingResult GetDefaultDetails() => new(
         StatusCodes.Status500InternalServerError,
-        localizer[LocalizationKeys.InternalServerTitle],
-        localizer[LocalizationKeys.InternalServerTitle],
+        stringProvider.Get(TitleKeys.InternalServer),
+        stringProvider.Get(DetailKeys.UnexpectedError),
         ErrorCodes.InternalServerError,
         null);
 
     private static async ValueTask<bool> HandleSafeFailAsync(
         HttpContext httpContext,
-        Exception originalError,
+        Exception secondaryException,
         CancellationToken ct)
     {
-        // Use a hardcoded 500 status
         httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
         httpContext.Response.ContentType = "application/json";
 
-        // Create a minimal JSON string manually or via a simple static object
-        // We avoid complex logic here to ensure this cannot fail.
-        var fallbackResponse = new
+        var fallback = new
         {
             Status = 500,
-            Title = ErrorCodes.InternalServerError,
-            Detail = "A critical failure occurred in the error handling pipeline.",
+            Title = "Critical Failure",
+            Detail = "The error handling pipeline crashed. Check server logs.",
             TraceId = httpContext.TraceIdentifier
         };
 
-        await httpContext.Response.WriteAsJsonAsync(fallbackResponse, ct);
-
+        await httpContext.Response.WriteAsJsonAsync(fallback, ct);
         return true;
     }
 }

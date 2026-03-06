@@ -1,11 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Playbook.Exceptions.Constants;
+using Playbook.Exceptions.Localization;
 
 namespace Playbook.Exceptions;
 
-public class GlobalProblemDetailsFactory(IHostEnvironment env) : ProblemDetailsFactory
+public class GlobalProblemDetailsFactory(
+    ILocalizedStringProvider stringProvider,
+    IHostEnvironment env) : ProblemDetailsFactory
 {
     public override ProblemDetails CreateProblemDetails(
         HttpContext httpContext,
@@ -17,19 +21,33 @@ public class GlobalProblemDetailsFactory(IHostEnvironment env) : ProblemDetailsF
     {
         var status = statusCode ?? 500;
 
-        // Logic to set a default title for 422 if not provided
-        var finalTitle = status == StatusCodes.Status422UnprocessableEntity && string.IsNullOrEmpty(title)
-            ? ErrorCodes.BusinessRuleViolation
-            : title;
+        // 1. Map the Title
+        var finalTitle = title ?? status switch
+        {
+            StatusCodes.Status401Unauthorized => stringProvider.Get(TitleKeys.Unauthorized),
+            StatusCodes.Status403Forbidden => stringProvider.Get(TitleKeys.Unauthorized),
+            StatusCodes.Status422UnprocessableEntity => stringProvider.Get(TitleKeys.BusinessRule),
+            _ => stringProvider.Get(TitleKeys.InternalServer)
+        };
+
+        // 2. Map the Machine Error Code
+        var errorCode = status switch
+        {
+            StatusCodes.Status401Unauthorized => ErrorCodes.Unauthorized,
+            StatusCodes.Status422UnprocessableEntity => ErrorCodes.BusinessRuleViolation,
+            StatusCodes.Status400BadRequest => ErrorCodes.ValidationError,
+            _ => ErrorCodes.InternalServerError
+        };
 
         return new ApiErrorResponse
         {
             Status = status,
-            Title = finalTitle ?? "An error occurred",
-            Detail = detail,
+            Title = finalTitle,
+            // If framework didn't provide detail, use our generic unexpected error detail
+            Detail = detail ?? stringProvider.Get(DetailKeys.UnexpectedError),
             Instance = instance ?? httpContext.Request.Path,
             TraceId = httpContext.TraceIdentifier,
-            ErrorCode = status == 422 ? ErrorCodes.BusinessRuleViolation : null
+            ErrorCode = errorCode
         };
     }
 
@@ -47,22 +65,25 @@ public class GlobalProblemDetailsFactory(IHostEnvironment env) : ProblemDetailsF
         var problemDetails = new ApiErrorResponse
         {
             Status = status,
-            Title = title ?? "Validation Error",
-            Detail = detail ?? "One or more validation errors occurred.",
+            Title = title ?? stringProvider.Get(TitleKeys.ValidationError),
+            Detail = detail ?? stringProvider.Get(DetailKeys.ValidationSummary),
             Instance = instance ?? httpContext.Request.Path,
             TraceId = httpContext.TraceIdentifier,
-            ErrorCode = "VALIDATION_ERROR"
+            ErrorCode = ErrorCodes.ValidationError
         };
 
-        // Correctly map ModelState to the base Errors dictionary
-        foreach (var modelStateKey in modelStateDictionary.Keys)
+        // Map framework-generated ModelState errors (e.g., from [Required] or [EmailAddress])
+        foreach (var entry in modelStateDictionary)
         {
-            var entry = modelStateDictionary[modelStateKey];
-            if (entry is not null && entry.Errors.Count > 0)
+            if (entry.Value.Errors.Count > 0)
             {
-                problemDetails.Errors.Add(
-                    modelStateKey,
-                    [.. entry.Errors.Select(e => e.ErrorMessage)]);
+                // We try to localize the error message if the framework provided a Key,
+                // otherwise we use the raw message provided by .NET.
+                var errorMessages = entry.Value.Errors
+                    .Select(e => stringProvider.Get(e.ErrorMessage))
+                    .ToArray();
+
+                problemDetails.Errors.Add(entry.Key, errorMessages);
             }
         }
 

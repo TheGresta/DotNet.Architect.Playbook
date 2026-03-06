@@ -9,63 +9,69 @@ namespace Playbook.Exceptions.Controllers;
 public class DiagnosticsController : ControllerBase
 {
     // 1. Test 404 - Resource Not Found
+    // Expected: INF_NOT_FOUND (Title) + DET_NOT_FOUND (formatted with RES_USER)
     [HttpGet("not-found")]
     public IActionResult GetNotFound()
     {
-        // This will be caught and mapped to 404 with localized message
-        throw new NotFoundException("User", "12345");
+        throw new NotFoundException(ResourceKeys.User, "12345");
     }
 
     // 2. Test 400 - Validation Errors
+    // Expected: INF_VALIDATION_ERROR (Title) + DET_VALIDATION_SUMMARY (Detail) 
+    // + localized errors using VAL_ keys
     [HttpGet("validation")]
     public IActionResult GetValidation()
     {
         var errors = new Dictionary<string, string[]>
         {
-            { "Email", ["Email is not in a valid format.", "Email provider is blocked."] },
-            { "Password", ["Password must be at least 8 characters."] }
+            {
+                nameof(Email),
+                [ValidationKeys.InvalidFormat, ValidationKeys.ProviderBlocked]
+            },
+            {
+                nameof(Password),
+                [ValidationKeys.TooShort]
+            }
         };
 
-        // This will test our IEnumerable to Dictionary mapping and 400 status
         throw new ValidationException(errors);
     }
 
-    // 3. Test 422 - Keyed Business Rule (Localization + Args)
+    // 3. Test 422 - Business Rule (Dynamic Rule + Args)
+    // Expected: INF_BUSINESS_RULE (Title) + RULE_INSUFFICIENT_FUNDS (Detail with Args)
     [HttpGet("business-rule")]
     public IActionResult GetBusinessRule()
     {
-        // Testing our "Elite" way: Key + Args for dynamic localization
-        // Ensure "INSUFFICIENT_FUNDS" exists in your .resx as:
-        // "You need {0} {1} more to complete this."
         throw new BusinessRuleException(BusinessRuleKeys.InsufficientFunds, 150, "USD");
     }
 
-    // 4. Test 500 - Standard Exception (Production vs Development)
-    [HttpGet("unhandled")]
-    public IActionResult GetUnhandled()
-    {
-        // In Dev: Should show StackTrace and Message
-        // In Prod: Should show generic "INTERNAL_SERVER_ERROR"
-        throw new InvalidOperationException("This is a raw .NET exception that occurred deep in the logic.");
-    }
-
-    // 5. Test 401 - Unauthorized (Testing Smart Logging & Severity)
+    // 4. Test 401 - Unauthorized
+    // Expected: INF_UNAUTHORIZED (Title) + Handled as LogWarning (not Error)
     [HttpGet("unauthorized")]
     public IActionResult GetUnauthorized()
     {
-        // This should be logged as a "Warning", not an "Error" to prevent alert fatigue
+        // For testing the Mapper, we'd throw a custom UnauthorizedException if created,
+        // otherwise, this returns the default ProblemDetails via the Factory.
         return Unauthorized();
-        // Note: If you want to test the Global Handler's mapping for custom Auth exceptions, 
-        // you would throw a custom UnauthorizedException here.
     }
 
-    // 6. Test the Safe-Fail Mechanism
-    [HttpGet("critial-panic")]
+    // 5. Test 500 - Standard Exception
+    // Expected: INF_INTERNAL_SERVER (Title) + DET_UNEXPECTED_ERROR (Detail)
+    [HttpGet("unhandled")]
+    public IActionResult GetUnhandled()
+    {
+        throw new InvalidOperationException("Raw system failure.");
+    }
+
+    // 6. Test Safe-Fail (Simulated Crash)
+    // Expected: Minimal JSON from HandleSafeFailAsync
+    [HttpGet("critical-panic")]
     public IActionResult GetCriticalPanic()
     {
-        // To test the "HandleSafeFailAsync" block, you would need to force 
-        // an exception INSIDE the GlobalExceptionHandler itself (e.g., passing a null logger).
-        // For now, let's simulate a nested error.
-        throw new Exception("Simulated crash that could break the handler.");
+        throw new Exception("Force critical fallback.");
     }
+
+    // Dummy properties for nameof() expressions to avoid magic strings for property names
+    private string Email => string.Empty;
+    private string Password => string.Empty;
 }
