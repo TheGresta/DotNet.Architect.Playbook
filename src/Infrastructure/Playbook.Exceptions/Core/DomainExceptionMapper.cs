@@ -43,9 +43,15 @@ public sealed class DomainExceptionMapper : IExceptionMapper
 
             foreach (var error in ex.Errors)
             {
-                // Each key in the list is a VAL_ key (e.g., VAL_REQUIRED)
+                // error.Key is the PropertyName (e.g., "Email")
+                // error.Value is an array of ValidationError objects
                 var translatedMessages = error.Value
-                    .Select(msgKey => _stringProvider.Get(msgKey))
+                    .Select(validationError =>
+                    {
+                        // We extract the 'Message' (which is our VAL_ key) 
+                        // and pass it to the string provider for translation.
+                        return _stringProvider.Get(validationError.Message);
+                    })
                     .ToArray();
 
                 localizedErrors.Add(error.Key, translatedMessages);

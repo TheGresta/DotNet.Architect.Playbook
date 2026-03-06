@@ -22,15 +22,15 @@ public class DiagnosticsController : ControllerBase
     [HttpGet("validation")]
     public IActionResult GetValidation()
     {
-        var errors = new Dictionary<string, string[]>
+        var errors = new Dictionary<string, ValidationError[]>
         {
             {
-                nameof(Email),
-                [ValidationKeys.InvalidFormat, ValidationKeys.ProviderBlocked]
+                "Email",
+                [new ValidationError(ValidationKeys.InvalidFormat, "user @gmail.com")]
             },
             {
-                nameof(Password),
-                [ValidationKeys.TooShort]
+                "Password",
+                [new ValidationError(ValidationKeys.TooShort, "123")]
             }
         };
 
@@ -42,7 +42,7 @@ public class DiagnosticsController : ControllerBase
     [HttpGet("business-rule")]
     public IActionResult GetBusinessRule()
     {
-        throw new BusinessRuleException(BusinessRuleKeys.InsufficientFunds, 150, "USD");
+        throw DomainErrors.InsufficientFunds(150, "USD");
     }
 
     // 4. Test 401 - Unauthorized

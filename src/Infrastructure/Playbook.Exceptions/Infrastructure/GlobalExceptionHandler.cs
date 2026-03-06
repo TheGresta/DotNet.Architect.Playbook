@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Diagnostics;
+﻿using System.Text;
+using Microsoft.AspNetCore.Diagnostics;
 using Playbook.Exceptions.Abstraction;
+using Playbook.Exceptions.Abstraction.Exceptions;
 using Playbook.Exceptions.Constants;
 using Playbook.Exceptions.Core;
 using Playbook.Exceptions.Models;
@@ -16,7 +18,8 @@ public sealed class GlobalExceptionHandler(
     const string LogTemplate =
         "{StatusCode} {HttpMethod} {HttpPath} | " +
         "[Customer:{CustomerNumber}] [Trace:{TraceId}] | " +
-        "{ErrorCode} | {ErrorMessage}";
+        "{ErrorCode} | {ErrorMessage} |" +
+        "Details: {ValidationDetails}";
 
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
@@ -81,9 +84,16 @@ public sealed class GlobalExceptionHandler(
         // Dynamically retrieve customer number if available
         var customerNumber = httpContext?.Request.Headers["X-Customer-Number"].FirstOrDefault() ?? "0";
 
+        object loggableErrors = "N/A";
+        if (exception is ValidationException valEx)
+        {
+            loggableErrors = SanitizeErrorsForLogging(valEx.Errors);
+        }
+
         // 1. The Scope: Every log inside this block gets these properties for observability
         using (logger.BeginScope(new Dictionary<string, object>
         {
+            ["ValidationDetails"] = loggableErrors,
             ["CustomerNumber"] = customerNumber,
             ["TraceId"] = traceId,
             ["StatusCode"] = details.StatusCode,
@@ -100,7 +110,8 @@ public sealed class GlobalExceptionHandler(
                 customerNumber,
                 traceId,
                 details.ErrorCode,
-                exception.Message
+                exception.Message,
+                loggableErrors
             };
 
             if (details.StatusCode >= 500)
@@ -110,6 +121,24 @@ public sealed class GlobalExceptionHandler(
             else
                 logger.LogInformation(LogTemplate, args);
         }
+    }
+
+    private string SanitizeErrorsForLogging(IReadOnlyDictionary<string, ValidationError[]> errors)
+    {
+        var sb = new StringBuilder();
+        foreach (var kvp in errors)
+        {
+            var errorSummaries = kvp.Value.Select(err =>
+            {
+                var val = SecurityConstants.SensitiveKeys.Contains(kvp.Key)
+                    ? "***MASKED***"
+                    : (err.AttemptedValue ?? "null");
+                return $"{err.Message}(Val: {val})";
+            });
+
+            sb.Append($"[{kvp.Key}: {string.Join(", ", errorSummaries)}] ");
+        }
+        return sb.ToString().Trim();
     }
 
     private static DebugDetails CreateDebugDetails(Exception ex) =>
