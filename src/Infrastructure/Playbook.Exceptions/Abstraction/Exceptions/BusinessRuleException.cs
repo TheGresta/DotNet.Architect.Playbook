@@ -1,6 +1,6 @@
 ﻿using Playbook.Exceptions.Constants;
 
-namespace Playbook.Exceptions.Domain;
+namespace Playbook.Exceptions.Abstraction.Exceptions;
 
 public class BusinessRuleException(string ruleKey, params object[] args)
     : DomainException(ErrorCodes.BusinessRuleViolation)

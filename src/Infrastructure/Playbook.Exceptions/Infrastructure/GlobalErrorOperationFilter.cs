@@ -1,7 +1,8 @@
 ﻿using Microsoft.OpenApi.Models;
+using Playbook.Exceptions.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
-namespace Playbook.Exceptions.Swagger;
+namespace Playbook.Exceptions.Infrastructure;
 
 public class GlobalErrorOperationFilter : IOperationFilter
 {

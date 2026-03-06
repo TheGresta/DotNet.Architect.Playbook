@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
+using Playbook.Exceptions.Abstraction.Exceptions;
 using Playbook.Exceptions.Constants;
-using Playbook.Exceptions.Domain;
 
-namespace Playbook.Exceptions.Controllers;
+namespace Playbook.Exceptions.Testing;
 
 [ApiController]
 [Route("api/test-errors")]

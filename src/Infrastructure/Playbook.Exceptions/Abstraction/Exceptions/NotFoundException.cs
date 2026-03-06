@@ -1,6 +1,6 @@
 ﻿using Playbook.Exceptions.Constants;
 
-namespace Playbook.Exceptions.Domain;
+namespace Playbook.Exceptions.Abstraction.Exceptions;
 
 public sealed class NotFoundException(string resourceName, object key)
     : DomainException(ErrorCodes.NotFound)

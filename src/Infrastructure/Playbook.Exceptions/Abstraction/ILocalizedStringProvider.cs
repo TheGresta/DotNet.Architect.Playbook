@@ -1,4 +1,4 @@
-﻿namespace Playbook.Exceptions.Localization;
+﻿namespace Playbook.Exceptions.Abstraction;
 
 public interface ILocalizedStringProvider
 {

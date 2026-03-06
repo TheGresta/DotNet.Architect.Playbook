@@ -1,6 +1,6 @@
 using Microsoft.OpenApi.Models;
 using Playbook.Exceptions;
-using Playbook.Exceptions.Swagger;
+using Playbook.Exceptions.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 

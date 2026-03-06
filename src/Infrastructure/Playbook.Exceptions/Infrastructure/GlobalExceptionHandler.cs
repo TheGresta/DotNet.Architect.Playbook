@@ -1,13 +1,13 @@
 ﻿using Microsoft.AspNetCore.Diagnostics;
-using Microsoft.Extensions.Localization;
+using Playbook.Exceptions.Abstraction;
 using Playbook.Exceptions.Constants;
-using Playbook.Exceptions.Localization;
-using Playbook.Exceptions.Mapping;
+using Playbook.Exceptions.Core;
+using Playbook.Exceptions.Models;
 
-namespace Playbook.Exceptions;
+namespace Playbook.Exceptions.Infrastructure;
 public sealed class GlobalExceptionHandler(
     IEnumerable<IExceptionMapper> mappers,
-    ILocalizedStringProvider stringProvider, // Swapped for our smart provider
+    ILocalizedStringProvider stringProvider,
     ILogger<GlobalExceptionHandler> logger,
     IHostEnvironment env)
     : IExceptionHandler
@@ -37,7 +37,7 @@ public sealed class GlobalExceptionHandler(
                 ErrorCode = details.ErrorCode,
                 Instance = httpContext.Request.Path,
                 TraceId = traceId,
-                Debug = null//env.IsDevelopment() ? CreateDebugDetails(exception) : null
+                Debug = env.IsDevelopment() ? CreateDebugDetails(exception) : null
             };
 
             if (details.ValidationErrors is not null)

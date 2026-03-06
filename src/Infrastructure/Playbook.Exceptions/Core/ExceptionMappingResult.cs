@@ -1,4 +1,4 @@
-﻿namespace Playbook.Exceptions.Mapping;
+﻿namespace Playbook.Exceptions.Core;
 
 public record ExceptionMappingResult(
 int StatusCode,

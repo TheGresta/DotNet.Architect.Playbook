@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace Playbook.Exceptions;
+namespace Playbook.Exceptions.Models;
 
 public sealed class ApiErrorResponse : ValidationProblemDetails
 {

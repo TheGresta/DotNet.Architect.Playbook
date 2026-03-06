@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc.Infrastructure;
-using Playbook.Exceptions.Localization;
-using Playbook.Exceptions.Mapping;
+using Playbook.Exceptions.Abstraction;
+using Playbook.Exceptions.Core;
+using Playbook.Exceptions.Infrastructure;
 
 namespace Playbook.Exceptions;
 

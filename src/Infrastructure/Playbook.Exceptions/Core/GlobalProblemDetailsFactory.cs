@@ -1,15 +1,14 @@
-﻿using System;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Playbook.Exceptions.Abstraction;
 using Playbook.Exceptions.Constants;
-using Playbook.Exceptions.Localization;
+using Playbook.Exceptions.Models;
 
-namespace Playbook.Exceptions;
+namespace Playbook.Exceptions.Core;
 
 public class GlobalProblemDetailsFactory(
-    ILocalizedStringProvider stringProvider,
-    IHostEnvironment env) : ProblemDetailsFactory
+    ILocalizedStringProvider stringProvider) : ProblemDetailsFactory
 {
     public override ProblemDetails CreateProblemDetails(
         HttpContext httpContext,

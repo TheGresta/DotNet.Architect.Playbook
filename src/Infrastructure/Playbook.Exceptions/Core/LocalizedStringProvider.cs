@@ -1,8 +1,9 @@
 ﻿using Microsoft.Extensions.Localization;
+using Playbook.Exceptions.Abstraction;
 using Playbook.Exceptions.Constants;
 using Playbook.Exceptions.Resources;
 
-namespace Playbook.Exceptions.Localization;
+namespace Playbook.Exceptions.Core;
 
 public sealed class LocalizedStringProvider(
     IStringLocalizerFactory factory,

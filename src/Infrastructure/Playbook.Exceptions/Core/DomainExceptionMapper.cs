@@ -1,8 +1,8 @@
-﻿using Playbook.Exceptions.Constants;
-using Playbook.Exceptions.Domain;
-using Playbook.Exceptions.Localization;
+﻿using Playbook.Exceptions.Abstraction;
+using Playbook.Exceptions.Abstraction.Exceptions;
+using Playbook.Exceptions.Constants;
 
-namespace Playbook.Exceptions.Mapping;
+namespace Playbook.Exceptions.Core;
 
 public sealed class DomainExceptionMapper : IExceptionMapper
 {

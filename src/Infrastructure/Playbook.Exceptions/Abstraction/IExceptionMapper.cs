@@ -1,4 +1,6 @@
-﻿namespace Playbook.Exceptions.Mapping;
+﻿using Playbook.Exceptions.Core;
+
+namespace Playbook.Exceptions.Abstraction;
 
 public interface IExceptionMapper
 {
