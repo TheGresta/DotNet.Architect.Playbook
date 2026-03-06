@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Localization;
 using Playbook.Exceptions.Constants;
 using Playbook.Exceptions.Mapping;
-using Playbook.Exceptions.Resources;
 
 namespace Playbook.Exceptions;
 public sealed class GlobalExceptionHandler(

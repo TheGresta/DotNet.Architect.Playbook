@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Localization;
 using Playbook.Exceptions.Constants;
-using Playbook.Exceptions.Resources;
 
 namespace Playbook.Exceptions.Localization;
 
