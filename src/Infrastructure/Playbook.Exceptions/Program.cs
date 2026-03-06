@@ -17,9 +17,15 @@ builder.Services.AddSwaggerGen(options =>
     options.OperationFilter<GlobalErrorOperationFilter>();
 });
 
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddInfrastructureErrorHandling();
 
-builder.Services.AddLogging(configure => configure.AddConsole());
+builder.Logging.AddSimpleConsole(options =>
+{
+    options.IncludeScopes = true; // MUST be true to see CustomerNumber/TraceId
+    options.TimestampFormat = "HH:mm:ss ";
+    options.SingleLine = true;
+});
 
 var app = builder.Build();
 

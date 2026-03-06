@@ -9,9 +9,15 @@ public sealed class GlobalExceptionHandler(
     IEnumerable<IExceptionMapper> mappers,
     ILocalizedStringProvider stringProvider,
     ILogger<GlobalExceptionHandler> logger,
+    IHttpContextAccessor httpContextAccessor,
     IHostEnvironment env)
     : IExceptionHandler
 {
+    const string LogTemplate =
+        "{StatusCode} {HttpMethod} {HttpPath} | " +
+        "[Customer:{CustomerNumber}] [Trace:{TraceId}] | " +
+        "{ErrorCode} | {ErrorMessage}";
+
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
         Exception exception,
@@ -26,7 +32,7 @@ public sealed class GlobalExceptionHandler(
             var details = mapper?.Map(exception) ?? GetDefaultDetails();
 
             // 2. Logging based on Severity logic
-            LogWithCorrectSeverity(exception, details.StatusCode, traceId);
+            LogWithCorrectSeverity(exception, details, traceId);
 
             // 3. Build RFC 7807 Response
             var response = new ApiErrorResponse
@@ -66,16 +72,44 @@ public sealed class GlobalExceptionHandler(
         }
     }
 
-    private void LogWithCorrectSeverity(Exception exception, int statusCode, string traceId)
+    private void LogWithCorrectSeverity(Exception exception, ExceptionMappingResult details, string traceId)
     {
-        const string template = "Exception occurred [TraceId: {TraceId}]: {Message}";
+        var httpContext = httpContextAccessor.HttpContext;
+        var method = httpContext?.Request.Method ?? "N/A";
+        var path = httpContext?.Request.Path ?? "N/A";
 
-        if (statusCode >= 500)
-            logger.LogError(exception, template, traceId, exception.Message);
-        else if (statusCode is StatusCodes.Status401Unauthorized or StatusCodes.Status403Forbidden)
-            logger.LogWarning(template, traceId, exception.Message);
-        else
-            logger.LogInformation(template, traceId, exception.Message);
+        // Dynamically retrieve customer number if available
+        var customerNumber = httpContext?.Request.Headers["X-Customer-Number"].FirstOrDefault() ?? "0";
+
+        // 1. The Scope: Every log inside this block gets these properties for observability
+        using (logger.BeginScope(new Dictionary<string, object>
+        {
+            ["CustomerNumber"] = customerNumber,
+            ["TraceId"] = traceId,
+            ["StatusCode"] = details.StatusCode,
+            ["ErrorCode"] = details.ErrorCode,
+            ["HttpMethod"] = method,
+            ["HttpPath"] = path
+        }))
+        {
+            var args = new object[]
+            {
+                details.StatusCode,
+                method,
+                path,
+                customerNumber,
+                traceId,
+                details.ErrorCode,
+                exception.Message
+            };
+
+            if (details.StatusCode >= 500)
+                logger.LogError(exception, LogTemplate, args);
+            else if (details.StatusCode is 401 or 403)
+                logger.LogWarning(LogTemplate, args);
+            else
+                logger.LogInformation(LogTemplate, args);
+        }
     }
 
     private static DebugDetails CreateDebugDetails(Exception ex) =>
