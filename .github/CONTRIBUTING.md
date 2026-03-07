@@ -1,56 +1,65 @@
 # 🤝 Contributing to DotNet.Architect.Playbook
-
-First off, thank you for wanting to help! To keep our codebase clean and maintainable, we follow a strict workflow inspired by "Big Tech" standards.
+Thank you for your interest in contributing! This project aims to provide a high-standard reference for .NET architecture. To maintain the quality and consistency of the codebase, we follow a structured workflow inspired by industry best practices.
 
 ---
 
 ## 🏗️ Our Development Workflow
-
-We follow an **Issue-First** workflow. No code should be written without an associated issue.
+We operate on an **Issue-First** basis. To ensure all changes are tracked and discussed, please do not submit a Pull Request without a linked issue.
 
 ### 1. Create an Issue
 Before starting any work, [open a new issue](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/new/choose). 
-* Use the **Feature Request** or **Bug Report** templates.
-* Once submitted, note the **Issue Number** (e.g., `#42`).
+* Use provided templates for **Feature Request** or **Bug Report**.
+* Note the Issue Number (e.g., `#42`) for use in your branch and commits.
 
 ### 2. Branch Naming Convention
-Branches must be prefixed based on the work type.
-* **Format:** `type/issue-number-short-description`
-* **Types:** `feat/`, `fix/`, `docs/`, `refactor/`, `chore/`
 
-**Examples:**
-- `feat/42-add-stripe-integration`
-- `fix/105-header-mobile-overlap`
+We use a structured naming convention to keep the repository organized.
 
-### 3. Commit Messages
-We use **Conventional Commits**. This allows us to automate our changelogs.
-* **Format:** `type(scope): [Issue #ID] description`
+| Prefix | Purpose | Example  |
+|------------|------------|---------|
+| `feat/`| New features or architecture patterns | `feat/42-stripe-integration` |
+| `fix/` | Bug fixes | `fix/105-header-overlap` |
+| `docs/` | Documentation changes only | `docs/update-readme` |
+| `refactor/` | Code changes that neither fix a bug nor add a feature | `refactor/api-logic` |
+| `chore/` | Maintenance tasks (dependencies, CI/CD) | `chore/update-nuget` |
 
-**Common Examples:**
-- `feat(api): [Issue #42] add post request for checkout`
-- `fix(ui): [Issue #105] resolve z-index issue on navbar`
-- `docs: update installation instructions`
+### 3. Commit Standards
+We follow **[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/)**. This allows us to generate automated changelogs.
+
+**Format:** `type(scope): [Issue #ID] description`
+* **Example:** `feat(api): [Issue #42] implement idempotency logic for checkout`
+* **Example:** `fix(ui): [Issue #105] resolve navbar z-index on mobile`
 
 ---
 
-## 🚀 Creating a Pull Request (PR)
-
-Once your code is ready:
-1. **Push your branch** to GitHub.
-2. **Open a PR** against the `main` branch.
-3. **Link the Issue:** In the PR description, use the keyword `Closes #IssueNumber`. 
-   * *Example: "This PR adds the payment gateway. Closes #42."*
-4. **Wait for CI:** Ensure all automated tests pass (Green checkmark ✅).
-5. **Code Review:** At least one maintainer must approve your code before it can be merged.
+## 🚀 Pull Request (PR) Process
+1. **Fork & Clone**: Work on your fork and push your branch there.
+2. **Submit PR**: Open a PR against our `main` branch.
+3. **Link Issues**: Use GitHub keywords in the description (e.g., Closes `#42`) so the issue is automatically resolved upon merge.
+4. **Continuous Integration**: Verify that all CI checks (unit tests, linting, builds) pass.
+5. **Review**: A maintainer will review your code. Please be prepared to iterate on feedback.
 
 ---
 
 ## 🛠️ Local Development Setup
-1. Clone the repo: `git clone ...`
-2. Install dependencies: `npm install` (or your command)
-3. Create your branch: `git checkout -b feat/your-issue-number-description`
+To get started with the codebase:
+
+1. Clone the repo:
+```bash
+git clone https://github.com/TheGresta/DotNet.Architect.Playbook.git
+```
+2. Initialize Environment:
+```bash
+# Add your specific setup commands here, for example:
+dotnet restore
+dotnet build
+```
+3. Create your feature branch:
+```bash
+git checkout -b feat/your-issue-number-description
+```
 
 ---
 
 ## ⚖️ Code of Conduct
-Be respectful and constructive. We are here to build great software together!
+We are committed to fostering a welcoming and inclusive community. By participating, you agree to abide by our standards of professional and respectful communication.
