@@ -1,6 +1,50 @@
-@Playbook.Exceptions_HostAddress = http://localhost:5122
+@Host = http://localhost:5122
+@CustomerNumber = 987654321
 
-GET {{Playbook.Exceptions_HostAddress}}/weatherforecast/
-Accept: application/json
+### 1. Test 404 - Resource Not Found (English)
+# Expected: Title: "Not Found", Detail: "User with key 12345 was not found."
+GET {{Host}}/api/diagnostics/not-found
+Accept-Language: en-US
+X-Customer-Number: {{CustomerNumber}}
 
-###
+---
+
+### 2. Test 404 - Resource Not Found (Turkish)
+# Expected: Title: "Bulunamadı", Detail: "12345 anahtarlı Kullanıcı bulunamadı."
+GET {{Host}}/api/diagnostics/not-found
+Accept-Language: tr-TR
+X-Customer-Number: {{CustomerNumber}}
+
+---
+
+### 3. Test 400 - Validation Errors
+# Expected: Errors dictionary with localized messages. 
+# Check logs to ensure 'Password' value is masked as '***'
+GET {{Host}}/api/diagnostics/validation
+Accept-Language: en-US
+X-Customer-Number: {{CustomerNumber}}
+
+---
+
+### 4. Test 422 - Business Rule (Insufficient Funds)
+# Expected: Detail formatted with args: "Insufficient funds. Required: 150 USD"
+GET {{Host}}/api/diagnostics/business-rule
+Accept-Language: en-US
+X-Customer-Number: {{CustomerNumber}}
+
+---
+
+### 5. Test 401 - Framework Native (Option 1)
+# Expected: Handled by GlobalProblemDetailsFactory via UseStatusCodePages
+GET {{Host}}/api/diagnostics/unauthorized
+Accept-Language: tr-TR
+X-Customer-Number: {{CustomerNumber}}
+
+---
+
+### 6. Test 500 - Unhandled System Exception
+# Expected: Generic localized error message. 
+# If in Development, 'debug' property should contain the stack trace.
+GET {{Host}}/api/diagnostics/unhandled
+Accept-Language: en-US
+X-Customer-Number: {{CustomerNumber}}
