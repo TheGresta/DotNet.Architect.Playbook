@@ -94,6 +94,10 @@ public sealed class GlobalProblemDetailsFactory(
                 // Localization protocol: Framework messages (like "The field is required") 
                 // are passed through the provider for potential custom overrides.
                 errorMessages[i] = stringProvider.Get(entry.Errors[i].ErrorMessage);
+                var rawMessage = entry.Errors[i].ErrorMessage;
+                errorMessages[i] = IsLocalizationKey(rawMessage)
+                     ? stringProvider.Get(rawMessage)
+                     : rawMessage; ;
             }
 
             // Ensures keys are added only once to prevent dictionary collision.
@@ -108,6 +112,7 @@ public sealed class GlobalProblemDetailsFactory(
     /// </summary>
     private string GetTitleForStatus(int status) => status switch
     {
+        StatusCodes.Status400BadRequest => stringProvider.Get(TitleKeys.ValidationError),
         StatusCodes.Status401Unauthorized => stringProvider.Get(TitleKeys.Unauthorized),
         StatusCodes.Status403Forbidden => stringProvider.Get(TitleKeys.Forbidden),
         StatusCodes.Status404NotFound => stringProvider.Get(TitleKeys.NotFound),

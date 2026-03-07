@@ -41,11 +41,7 @@ public sealed class GlobalExceptionHandler(
         {
             var traceId = httpContext.TraceIdentifier;
 
-            // 1. Resolve Mapping via established Visitor/Double-Dispatch
-            // Checks if the exception supports self-mapping to avoid complex type checking in the handler.
-            var details = exception is IMappableException mapable
-                ? mapable.Map(mapper)
-                : GetDefaultDetails();
+            var details = mapper.Map(exception);
 
             // 2. Optimized Logging
             // Dispatches log entry with severity levels tuned to the HTTP status code.
@@ -76,6 +72,7 @@ public sealed class GlobalExceptionHandler(
         catch (Exception secondaryException)
         {
             // Fail-safe mechanism to ensure the client receives a valid JSON response even if the handler fails.
+            logger.LogCritical(secondaryException, "Global exception handling failed for trace {TraceId}", httpContext.TraceIdentifier);
             return await HandleSafeFailAsync(httpContext, secondaryException, cancellationToken);
         }
     }
@@ -113,7 +110,7 @@ public sealed class GlobalExceptionHandler(
             if (details.StatusCode >= 500)
                 logger.LogError(exception, _logTemplate, details.StatusCode, method, path, customerNumber, traceId, details.Code, details.Detail, validationSummary);
             else if (details.StatusCode is 401 or 403)
-                logger.LogWarning(_logTemplate, details.StatusCode, method, path, customerNumber, traceId, details.Code, details.Detail, validationSummary);
+                logger.LogWarning(exception, _logTemplate, details.StatusCode, method, path, customerNumber, traceId, details.Code, exception.Message, validationSummary);
             else
                 logger.LogInformation(_logTemplate, details.StatusCode, method, path, customerNumber, traceId, details.Code, details.Detail, validationSummary);
         }
@@ -132,13 +129,24 @@ public sealed class GlobalExceptionHandler(
             {
                 var err = val[i];
                 // PII Protection: Compares against SecurityConstants.SensitiveKeys to mask passwords or tokens.
-                var displayVal = SecurityConstants.SensitiveKeys.Contains(key) ? "***" : (err.AttemptedValue ?? "null");
+                var displayVal = IsSensitiveField(key) ? "***" : (err.AttemptedValue ?? "null");
                 sb.Append(err.Message).Append("(Val: ").Append(displayVal).Append(')');
                 if (i < val.Length - 1) sb.Append(", ");
             }
             sb.Append("] ");
         }
         return sb.ToString().Trim();
+    }
+
+    private static bool IsSensitiveField(string fieldName)
+    {
+        foreach (var segment in fieldName.Split(['.', '[', ']'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (SecurityConstants.SensitiveKeys.Contains(segment))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>
