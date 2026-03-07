@@ -1,6 +1,8 @@
 using System.Linq.Expressions;
+
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
+
 using Playbook.Persistence.MongoDB.Application;
 using Playbook.Persistence.MongoDB.Domain;
 using Playbook.Persistence.MongoDB.Infrastructure.Contexts;

@@ -1,7 +1,10 @@
 using System.Reflection;
+
 using MongoDB.Driver;
+
 using Playbook.Persistence.MongoDB.Domain;
 using Playbook.Persistence.MongoDB.Infrastructure.Contexts;
+
 using Polly;
 
 namespace Playbook.Persistence.MongoDB.Infrastructure;

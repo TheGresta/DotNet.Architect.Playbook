@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
 using Playbook.Persistence.EntityFramework.Persistence.Context;
 
 namespace Playbook.Persistence.EntityFramework.Persistence.Extensions;

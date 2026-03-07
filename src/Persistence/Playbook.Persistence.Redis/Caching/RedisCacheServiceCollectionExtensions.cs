@@ -1,9 +1,12 @@
 ﻿using Microsoft.Extensions.Options;
+
 using Playbook.Persistence.Redis.Caching.Serialization;
 using Playbook.Persistence.Redis.Interfaces;
 using Playbook.Persistence.Redis.Models;
+
 using Polly;
 using Polly.CircuitBreaker;
+
 using StackExchange.Redis;
 
 namespace Playbook.Persistence.Redis.Caching;

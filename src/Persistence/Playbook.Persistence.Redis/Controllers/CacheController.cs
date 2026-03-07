@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+
 using Playbook.Persistence.Redis.Interfaces;
 
 namespace Playbook.Persistence.Redis.Controllers;

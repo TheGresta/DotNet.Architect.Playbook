@@ -1,5 +1,7 @@
 ﻿using System.Linq.Expressions;
+
 using Microsoft.AspNetCore.Mvc;
+
 using Playbook.Persistence.ElasticSearch.Application;
 using Playbook.Persistence.ElasticSearch.Application.Documents;
 using Playbook.Persistence.ElasticSearch.Application.Models;

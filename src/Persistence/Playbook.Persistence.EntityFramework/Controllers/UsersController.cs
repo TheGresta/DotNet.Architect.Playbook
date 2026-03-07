@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
+
 using Microsoft.AspNetCore.Mvc;
+
 using Playbook.Persistence.EntityFramework.Application;
 using Playbook.Persistence.EntityFramework.Domain;
 
@@ -54,7 +56,7 @@ public class UsersController(IUnitOfWork uow) : ControllerBase
     public async Task<IActionResult> GetSelected(CancellationToken ct = default)
     {
         var pagedUsers = await uow.UserRepository.FindAllSelectedAsync(
-            selector: u => new { u.Id, u.Email},
+            selector: u => new { u.Id, u.Email },
             orderBy: q => q.OrderBy(u => u.Id),
             cancellationToken: ct);
 

@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Options;
+
 using Playbook.Persistence.EntityFramework.Domain.Base;
 using Playbook.Persistence.EntityFramework.Persistence.Options;
 

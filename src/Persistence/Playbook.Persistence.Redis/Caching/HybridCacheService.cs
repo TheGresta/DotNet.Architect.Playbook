@@ -1,7 +1,11 @@
 ﻿using System.Buffers;
+
 using Microsoft.Extensions.Caching.Memory;
+
 using Playbook.Persistence.Redis.Interfaces;
+
 using Polly;
+
 using StackExchange.Redis;
 
 namespace Playbook.Persistence.Redis.Caching;
@@ -200,7 +204,7 @@ public sealed class HybridCacheService(
                 for i, key in ipairs(res[2]) do redis.call('DEL', key) end
             until cursor == '0'
             return redis.call('INCR', ARGV[2])";
-        
+
         await _l2.ScriptEvaluateAsync(script, values: [$"{prefix}*", versionKey]);
         l1.Remove(versionKey);
         await _subscriber.PublishAsync(InvalidationChannel, $"PURGE_VER:{prefix}", CommandFlags.FireAndForget);

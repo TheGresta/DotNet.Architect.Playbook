@@ -1,4 +1,5 @@
 using MongoDB.Driver;
+
 using Playbook.Persistence.MongoDB.Application;
 using Playbook.Persistence.MongoDB.Application.Repositories;
 using Playbook.Persistence.MongoDB.Infrastructure.Contexts;

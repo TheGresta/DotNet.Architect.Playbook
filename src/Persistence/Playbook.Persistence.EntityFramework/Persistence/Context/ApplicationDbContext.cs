@@ -1,9 +1,11 @@
-﻿using Playbook.Persistence.EntityFramework.Persistence.Encryption;
-using Playbook.Persistence.EntityFramework.Persistence.Extensions;
-using Playbook.Persistence.EntityFramework.Persistence.Options;
-using System.Reflection;
+﻿using System.Reflection;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+
+using Playbook.Persistence.EntityFramework.Persistence.Encryption;
+using Playbook.Persistence.EntityFramework.Persistence.Extensions;
+using Playbook.Persistence.EntityFramework.Persistence.Options;
 
 namespace Playbook.Persistence.EntityFramework.Persistence.Context;
 

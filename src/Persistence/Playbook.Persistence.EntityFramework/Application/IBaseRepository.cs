@@ -1,4 +1,5 @@
 ﻿using System.Linq.Expressions;
+
 using Playbook.Persistence.EntityFramework.Domain.Base;
 
 namespace Playbook.Persistence.EntityFramework.Application;
