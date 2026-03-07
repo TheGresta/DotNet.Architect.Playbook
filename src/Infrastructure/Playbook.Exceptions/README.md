@@ -38,8 +38,8 @@ graph TD
 |------------|------------|---------|
 | Pattern | Visitor (Double Dispatch) | Decouples Domain Exceptions from HTTP concerns. Exceptions "choose" their mapping logic without `switch` expressions on types. |
 | Response | RFC 7807 | Adheres to the industry standard "Problem Details for HTTP APIs" using .NET 8 `ValidationProblemDetails`. |
-| Localization | IStringLocalizerIStringLocalizer | Uses native .NET localization but adds a custom Provider to handle dynamic resource routing via key prefixes (VAL_, RULE_, etc.). |
-| Performance | Span<T> & FrozenSet | Uses `ReadOnlySpan<char> `for allocation-free prefix checking and `FrozenSet` for O(1) PII redaction checks. |
+| Localization | IStringLocalizer | Uses native .NET localization but adds a custom Provider to handle dynamic resource routing via key prefixes (VAL_, RULE_, etc.). |
+| Performance | Span<T> & FrozenSet | Uses `ReadOnlySpan<char>`for allocation-free prefix checking and `FrozenSet` for O(1) PII redaction checks. |
 | Middleware | IExceptionHandler | Replaces older middleware patterns with the modern .NET 8 interface for better performance and pipeline integration. |
 
 ## 💻 3. Implementation Blueprint

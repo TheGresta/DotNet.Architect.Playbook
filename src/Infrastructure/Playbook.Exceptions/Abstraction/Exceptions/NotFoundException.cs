@@ -9,7 +9,7 @@ namespace Playbook.Exceptions.Abstraction.Exceptions;
 /// </summary>
 /// <param name="resourceName">The name of the entity type (e.g., "Order", "User").</param>
 /// <param name="key">The unique identifier that was used for the lookup.</param>
-public sealed class NotFoundException(string resourceName, object key)
+public sealed class NotFoundException(string resourceName, string key)
     : DomainException(ErrorCodes.NotFound)
 {
     /// <summary>
@@ -20,7 +20,7 @@ public sealed class NotFoundException(string resourceName, object key)
     /// <summary>
     /// Gets the key or identifier associated with the failed lookup.
     /// </summary>
-    public object Key { get; } = key;
+    public string Key { get; } = key;
 
     /// <summary>
     /// Dispatches the exception to the appropriate mapping logic using the Visitor pattern.

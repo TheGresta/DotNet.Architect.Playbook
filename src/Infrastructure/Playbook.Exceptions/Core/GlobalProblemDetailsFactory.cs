@@ -134,7 +134,7 @@ public sealed class GlobalProblemDetailsFactory(
     private static string GetErrorCodeForStatus(int status) => status switch
     {
         StatusCodes.Status401Unauthorized => ErrorCodes.Unauthorized,
-        StatusCodes.Status403Forbidden => ErrorCodes.Unauthorized,
+        StatusCodes.Status403Forbidden => ErrorCodes.Forbidden,
         StatusCodes.Status422UnprocessableEntity => ErrorCodes.BusinessRuleViolation,
         StatusCodes.Status400BadRequest => ErrorCodes.ValidationError,
         StatusCodes.Status404NotFound => ErrorCodes.NotFound,
