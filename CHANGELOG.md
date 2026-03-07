@@ -1,3 +1,25 @@
+# [1.5.0](https://github.com/TheGresta/DotNet.Architect.Playbook/compare/v1.4.0...v1.5.0) (2026-03-07)
+
+
+### Bug Fixes
+
+* **exeptionHandling:** [Issue [#29](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/29)] ai suggesments ([2bb43a4](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/2bb43a4924180f4483b6f1116105e42b049c5ad0))
+* **exeptionHandling:** [Issue [#29](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/29)] ai suggesments 2 ([1c142c4](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/1c142c4e104f00a24806eee1c73337862ab20769))
+* **exeptionHandling:** [Issue [#29](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/29)] ai suggesments 3 ([88fbe2f](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/88fbe2fa213ef2334688adffc75ea9a6e5c962bc))
+
+
+### Features
+
+* **exeptionHandling:** [Issue [#29](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/29)] .http file test update ([a025cd7](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/a025cd79111004da2d5b91b1ceac5bd04eb388cc))
+* **exeptionHandling:** [Issue [#29](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/29)] dynamic multiple localization files ([184ed68](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/184ed68c128e9b8a47c396dcee3147700103ebb6))
+* **exeptionHandling:** [Issue [#29](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/29)] exception globalization updates ([bea5978](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/bea59788796ca86ba105e40f592a1d96ad706304))
+* **exeptionHandling:** [Issue [#29](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/29)] file placement change ([4393b23](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/4393b23515cab9180361dd8c7c16592e0aaa194a))
+* **exeptionHandling:** [Issue [#29](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/29)] initial logix and localization ([10d2642](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/10d26423f1bc6d1893a1d86c470655dd5d1aacf8))
+* **exeptionHandling:** [Issue [#29](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/29)] localize fixes ([6f4f5e0](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/6f4f5e0e521c0d1c43942a4ab306bf346c83931d))
+* **exeptionHandling:** [Issue [#29](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/29)] logging behaiveor change ([410317f](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/410317fc0aaec341b0aef9a8eea028d2050c14d1))
+* **exeptionHandling:** [Issue [#29](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/29)] mapable exception and optimisations ([ae18f8f](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/ae18f8faf6f672690613231e0cc5087c6d133a43))
+* **exeptionHandling:** [Issue [#29](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/29)] security property ignore mask ([b942f66](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/b942f6657a3260b7233c6697c2ea90feecb544c3))
+
 # [1.4.0](https://github.com/TheGresta/DotNet.Architect.Playbook/compare/v1.3.0...v1.4.0) (2026-03-05)
 
 
