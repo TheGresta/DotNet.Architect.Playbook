@@ -1,41 +1,36 @@
 ﻿using Microsoft.OpenApi.Models;
+
 using Playbook.Exceptions.Models;
+
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace Playbook.Exceptions.Infrastructure;
 
-public class GlobalErrorOperationFilter : IOperationFilter
+public sealed class GlobalErrorOperationFilter : IOperationFilter
 {
     public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
-        // Define the error response schema reference
+        // Generate the schema once for re-use
         var errorSchema = context.SchemaGenerator.GenerateSchema(typeof(ApiErrorResponse), context.SchemaRepository);
 
-        // 400 Bad Request (Validation)
-        AddResponse(operation, "400", "Validation Error / Bad Request", errorSchema);
-
-        // 404 Not Found
-        AddResponse(operation, "404", "The requested resource was not found", errorSchema);
-
-        // 422 Unprocessable Entity (Business Rules)
+        // Standardized Error Mapping
+        AddResponse(operation, "400", "Validation Error or Malformed Request", errorSchema);
+        AddResponse(operation, "401", "Unauthorized - Authentication required", errorSchema);
+        AddResponse(operation, "403", "Forbidden - Insufficient permissions", errorSchema);
+        AddResponse(operation, "404", "Resource not found", errorSchema);
         AddResponse(operation, "422", "Business Rule Violation", errorSchema);
-
-        // 500 Internal Server Error
-        AddResponse(operation, "500", "Internal Server Error / Unexpected Failure", errorSchema);
+        AddResponse(operation, "500", "Internal Server Error", errorSchema);
     }
 
-    private static void AddResponse(OpenApiOperation operation, string statusCode, string description, OpenApiSchema schema)
-    {
-        if (!operation.Responses.ContainsKey(statusCode))
+    private static void AddResponse(OpenApiOperation operation, string statusCode, string description, OpenApiSchema schema) =>
+        // Use TryAdd to avoid potential key-collision exceptions
+        _ = operation.Responses.TryAdd(statusCode, new OpenApiResponse
         {
-            operation.Responses.Add(statusCode, new OpenApiResponse
+            Description = description,
+            Content = new Dictionary<string, OpenApiMediaType>
             {
-                Description = description,
-                Content = new Dictionary<string, OpenApiMediaType>
-                {
-                    ["application/json"] = new() { Schema = schema }
-                }
-            });
-        }
-    }
+                ["application/problem+json"] = new() { Schema = schema },
+                ["application/json"] = new() { Schema = schema }
+            }
+        });
 }

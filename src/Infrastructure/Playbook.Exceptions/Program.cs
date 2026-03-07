@@ -1,4 +1,5 @@
 using Microsoft.OpenApi.Models;
+
 using Playbook.Exceptions;
 using Playbook.Exceptions.Infrastructure;
 

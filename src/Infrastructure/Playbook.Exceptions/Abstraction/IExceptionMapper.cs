@@ -1,12 +1,12 @@
-﻿using Playbook.Exceptions.Core;
+﻿using Playbook.Exceptions.Abstraction.Exceptions;
+using Playbook.Exceptions.Core;
 
 namespace Playbook.Exceptions.Abstraction;
 
 public interface IExceptionMapper
 {
-    // Determines if this mapper can handle the specific exception
-    bool CanMap(Exception exception);
-
-    // Performs the mapping logic
-    ExceptionMappingResult Map(Exception exception);
+    ExceptionMappingResult MapSpecific(NotFoundException ex);
+    ExceptionMappingResult MapSpecific(BusinessRuleException ex);
+    ExceptionMappingResult MapSpecific(ValidationException ex);
+    ExceptionMappingResult MapFallback(Exception ex);
 }

@@ -1,7 +1,10 @@
-﻿namespace Playbook.Exceptions.Abstraction.Exceptions;
+﻿using Playbook.Exceptions.Core;
 
-public abstract class DomainException(string errorCode)
-    : Exception(null)
+namespace Playbook.Exceptions.Abstraction.Exceptions;
+
+public abstract class DomainException(string errorCode, string? message = null, Exception? innerException = null)
+    : Exception(message, innerException), IMapableException
 {
     public string ErrorCode { get; } = errorCode;
+    public abstract ExceptionMappingResult Map(IExceptionMapper mapper);
 }

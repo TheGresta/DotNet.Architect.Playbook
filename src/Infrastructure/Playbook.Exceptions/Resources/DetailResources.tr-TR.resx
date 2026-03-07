@@ -120,6 +120,9 @@
   <data name="NOT_FOUND" xml:space="preserve">
     <value>'{1}' ID'li {0} bulunamadı.</value>
   </data>
+  <data name="UNAUTHORIZED" xml:space="preserve">
+    <value>Giriş başarısız</value>
+  </data>
   <data name="UNEXPECTED_ERROR" xml:space="preserve">
     <value>Beklenmedik bir hata oluştu.</value>
   </data>

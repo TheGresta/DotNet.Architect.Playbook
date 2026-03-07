@@ -7,4 +7,5 @@ public static class DetailKeys
     public const string NotFound = P + "NOT_FOUND";
     public const string UnexpectedError = P + "UNEXPECTED_ERROR";
     public const string ValidationSummary = P + "VALIDATION_SUMMARY";
+    public const string Unauthorized = P + "UNAUTHORIZED";
 }

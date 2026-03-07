@@ -1,13 +1,14 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+
 using Playbook.Exceptions.Abstraction;
 using Playbook.Exceptions.Constants;
 using Playbook.Exceptions.Models;
 
 namespace Playbook.Exceptions.Core;
 
-public class GlobalProblemDetailsFactory(
+public sealed class GlobalProblemDetailsFactory(
     ILocalizedStringProvider stringProvider) : ProblemDetailsFactory
 {
     public override ProblemDetails CreateProblemDetails(
@@ -18,35 +19,16 @@ public class GlobalProblemDetailsFactory(
         string? detail = null,
         string? instance = null)
     {
-        var status = statusCode ?? 500;
-
-        // 1. Map the Title
-        var finalTitle = title ?? status switch
-        {
-            StatusCodes.Status401Unauthorized => stringProvider.Get(TitleKeys.Unauthorized),
-            StatusCodes.Status403Forbidden => stringProvider.Get(TitleKeys.Unauthorized),
-            StatusCodes.Status422UnprocessableEntity => stringProvider.Get(TitleKeys.BusinessRule),
-            _ => stringProvider.Get(TitleKeys.InternalServer)
-        };
-
-        // 2. Map the Machine Error Code
-        var errorCode = status switch
-        {
-            StatusCodes.Status401Unauthorized => ErrorCodes.Unauthorized,
-            StatusCodes.Status422UnprocessableEntity => ErrorCodes.BusinessRuleViolation,
-            StatusCodes.Status400BadRequest => ErrorCodes.ValidationError,
-            _ => ErrorCodes.InternalServerError
-        };
+        var status = statusCode ?? StatusCodes.Status500InternalServerError;
 
         return new ApiErrorResponse
         {
             Status = status,
-            Title = finalTitle,
-            // If framework didn't provide detail, use our generic unexpected error detail
-            Detail = detail ?? stringProvider.Get(DetailKeys.UnexpectedError),
+            Title = title ?? GetTitleForStatus(status),
+            Detail = detail ?? GetDetailForStatus(status),
             Instance = instance ?? httpContext.Request.Path,
             TraceId = httpContext.TraceIdentifier,
-            ErrorCode = errorCode
+            ErrorCode = GetErrorCodeForStatus(status)
         };
     }
 
@@ -61,31 +43,59 @@ public class GlobalProblemDetailsFactory(
     {
         var status = statusCode ?? StatusCodes.Status400BadRequest;
 
-        var problemDetails = new ApiErrorResponse
+        var response = new ApiErrorResponse
         {
             Status = status,
             Title = title ?? stringProvider.Get(TitleKeys.ValidationError),
             Detail = detail ?? stringProvider.Get(DetailKeys.ValidationSummary),
             Instance = instance ?? httpContext.Request.Path,
             TraceId = httpContext.TraceIdentifier,
-            ErrorCode = ErrorCodes.ValidationError
+            ErrorCode = ErrorCodes.ValidationError,
+            Errors = new Dictionary<string, string[]>(modelStateDictionary.Count)
         };
 
-        // Map framework-generated ModelState errors (e.g., from [Required] or [EmailAddress])
-        foreach (var entry in modelStateDictionary)
+        foreach (var (key, entry) in modelStateDictionary)
         {
-            if (entry.Value.Errors.Count > 0)
-            {
-                // We try to localize the error message if the framework provided a Key,
-                // otherwise we use the raw message provided by .NET.
-                var errorMessages = entry.Value.Errors
-                    .Select(e => stringProvider.Get(e.ErrorMessage))
-                    .ToArray();
+            if (entry.Errors.Count == 0) continue;
 
-                problemDetails.Errors.Add(entry.Key, errorMessages);
+            var errorMessages = new string[entry.Errors.Count];
+            for (var i = 0; i < entry.Errors.Count; i++)
+            {
+                // Localization protocol: Framework messages (like "The field is required") 
+                // are passed through the provider for potential custom overrides.
+                errorMessages[i] = stringProvider.Get(entry.Errors[i].ErrorMessage);
             }
+
+            response.Errors.TryAdd(key, errorMessages);
         }
 
-        return problemDetails;
+        return response;
     }
+
+    private string GetTitleForStatus(int status) => status switch
+    {
+        StatusCodes.Status401Unauthorized => stringProvider.Get(TitleKeys.Unauthorized),
+        StatusCodes.Status403Forbidden => stringProvider.Get(TitleKeys.Unauthorized),
+        StatusCodes.Status404NotFound => stringProvider.Get(TitleKeys.NotFound),
+        StatusCodes.Status422UnprocessableEntity => stringProvider.Get(TitleKeys.BusinessRule),
+        _ => stringProvider.Get(TitleKeys.InternalServer)
+    };
+
+    private string GetDetailForStatus(int status) => status switch
+    {
+        StatusCodes.Status401Unauthorized => stringProvider.Get(DetailKeys.Unauthorized),
+        StatusCodes.Status403Forbidden => stringProvider.Get(DetailKeys.Unauthorized),
+        StatusCodes.Status404NotFound => stringProvider.Get(DetailKeys.NotFound), // Optional: add generic "Resource not found"
+        _ => stringProvider.Get(DetailKeys.UnexpectedError)
+    };
+
+    private static string GetErrorCodeForStatus(int status) => status switch
+    {
+        StatusCodes.Status401Unauthorized => ErrorCodes.Unauthorized,
+        StatusCodes.Status403Forbidden => ErrorCodes.Unauthorized,
+        StatusCodes.Status422UnprocessableEntity => ErrorCodes.BusinessRuleViolation,
+        StatusCodes.Status400BadRequest => ErrorCodes.ValidationError,
+        StatusCodes.Status404NotFound => ErrorCodes.NotFound,
+        _ => ErrorCodes.InternalServerError
+    };
 }

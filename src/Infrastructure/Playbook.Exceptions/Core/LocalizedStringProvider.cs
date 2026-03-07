@@ -1,4 +1,7 @@
-﻿using Microsoft.Extensions.Localization;
+﻿using System.Collections.Concurrent;
+
+using Microsoft.Extensions.Localization;
+
 using Playbook.Exceptions.Abstraction;
 using Playbook.Exceptions.Constants;
 using Playbook.Exceptions.Resources;
@@ -9,17 +12,22 @@ public sealed class LocalizedStringProvider(
     IStringLocalizerFactory factory,
     ILogger<LocalizedStringProvider> logger) : ILocalizedStringProvider
 {
+    // Optimization: Cache localizers to avoid factory overhead on every request
+    private readonly ConcurrentDictionary<Type, IStringLocalizer> _localizerCache = new();
+
     public string Get(string key, params object[] args)
     {
+        if (string.IsNullOrWhiteSpace(key)) return string.Empty;
+
         try
         {
-            // 1. Determine which Resource File to use based on the Prefix
             var resourceType = GetResourceType(key);
-            var localizer = factory.Create(resourceType);
 
-            // 2. Strip the prefix for the actual lookup
-            // Example: "VAL_REQUIRED" -> "REQUIRED"
-            string cleanKey = key.Contains('_') ? key.Split('_', 2)[1] : key;
+            // Get or create localizer from cache
+            var localizer = _localizerCache.GetOrAdd(resourceType, factory.Create);
+
+            // Optimization: Span-based prefix stripping to avoid string allocations
+            var cleanKey = ExtractKey(key);
 
             var result = localizer[cleanKey, args];
 
@@ -27,8 +35,6 @@ public sealed class LocalizedStringProvider(
             {
                 logger.LogWarning("Key {CleanKey} not found in {ResourceName}. Full Key: {Key}",
                     cleanKey, resourceType.Name, key);
-
-                // Return the raw key so developers can identify missing translations
                 return key;
             }
 
@@ -37,22 +43,29 @@ public sealed class LocalizedStringProvider(
         catch (Exception ex)
         {
             logger.LogCritical(ex, "Localization failed for key: {Key}", key);
-            return key; // Fail safe
+            return key;
         }
+    }
+
+    private static string ExtractKey(string key)
+    {
+        int index = key.IndexOf('_');
+        return index == -1 || index == key.Length - 1
+            ? key
+            : key[(index + 1)..];
     }
 
     private static Type GetResourceType(string key)
     {
-        if (string.IsNullOrEmpty(key)) return typeof(SharedResources);
+        // Optimization: Use Span for prefix checking to avoid substring allocations
+        ReadOnlySpan<char> span = key.AsSpan();
 
-        return key switch
-        {
-            var k when k.StartsWith(LocalizationPrefixes.Info) => typeof(InfoResources),
-            var k when k.StartsWith(LocalizationPrefixes.Detail) => typeof(DetailResources),
-            var k when k.StartsWith(LocalizationPrefixes.Resource) => typeof(ResourceResources),
-            var k when k.StartsWith(LocalizationPrefixes.Validation) => typeof(ValidationResources),
-            var k when k.StartsWith(LocalizationPrefixes.Rule) => typeof(BusinessRuleResources),
-            _ => typeof(SharedResources)
-        };
+        if (span.StartsWith(LocalizationPrefixes.Info)) return typeof(InfoResources);
+        if (span.StartsWith(LocalizationPrefixes.Detail)) return typeof(DetailResources);
+        if (span.StartsWith(LocalizationPrefixes.Resource)) return typeof(ResourceResources);
+        if (span.StartsWith(LocalizationPrefixes.Validation)) return typeof(ValidationResources);
+        if (span.StartsWith(LocalizationPrefixes.Rule)) return typeof(BusinessRuleResources);
+
+        return typeof(SharedResources);
     }
 }

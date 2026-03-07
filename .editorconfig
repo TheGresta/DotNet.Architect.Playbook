@@ -1,0 +1,125 @@
+# Top-most EditorConfig file
+root = true
+
+# All Files - General Settings
+# Summary: Ensures consistent line endings and spacing across all file types (JSON, XML, etc.)
+[*]
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+end_of_line = lf
+
+# .NET C# Rules
+[*.cs]
+
+#### Underscore / Naming Preferences ####
+# Summary: Enforces standard private field naming (e.g., _camelCase). 
+# This reduces "this." clutter and identifies class-level variables instantly.
+dotnet_diagnostic.IDE1006.severity = warning
+dotnet_naming_rule.private_members_with_underscore.symbols = private_fields
+dotnet_naming_rule.private_members_with_underscore.style = prefix_underscore
+dotnet_naming_rule.private_members_with_underscore.severity = warning
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+dotnet_naming_style.prefix_underscore.capitalization = camel_case
+dotnet_naming_style.prefix_underscore.required_prefix = _
+
+#### Using Directives ####
+# Summary: Keeps imports clean by placing System headers first and removing unused ones.
+dotnet_separate_import_directive_groups = true
+dotnet_sort_system_directives_first = true
+dotnet_diagnostic.IDE0005.severity = warning
+
+#### Style & Braces ####
+# Summary: Enforces "Allman" style (braces on new lines) and requires braces even for single-line 'if' statements.
+# This prevents "logic bugs" where a line is added but not included in the conditional.
+csharp_new_line_before_open_brace = all
+csharp_prefer_simple_using_statement = true:suggestion
+csharp_style_expression_bodied_methods = true:suggestion
+csharp_style_namespace_declarations = file_scoped:warning
+
+#### Modern C# Features ####
+# Summary: Encourages newer syntax like Pattern Matching and File-Scoped Namespaces to reduce indentation.
+csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
+csharp_style_prefer_switch_expression = true:suggestion
+
+#### Spacing Rules ####
+# Summary: Controls the "noise" in the editor. Set to 'suggestion' so they don't drive you crazy, but keep the code tidy.
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_between_parentheses = false
+csharp_space_before_comma = false
+csharp_space_after_comma = true
+
+# Web / Frontend (Inside the .NET Project)
+# Summary: Web files typically use 2 spaces by industry standard (JS/TS/JSON).
+[*.{json,js,ts,tsx,html}]
+indent_size = 2
+
+# XML / Config files
+[*.{xml,config,csproj,sln}]
+indent_size = 2# Top-most EditorConfig file
+root = true
+
+# All Files - General Settings
+# Summary: Ensures consistent line endings and spacing across all file types (JSON, XML, etc.)
+[*]
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+end_of_line = lf
+
+# .NET C# Rules
+[*.cs]
+
+#### Underscore / Naming Preferences ####
+# Summary: Enforces standard private field naming (e.g., _camelCase). 
+# This reduces "this." clutter and identifies class-level variables instantly.
+dotnet_diagnostic.IDE1006.severity = warning
+dotnet_naming_rule.private_members_with_underscore.symbols = private_fields
+dotnet_naming_rule.private_members_with_underscore.style = prefix_underscore
+dotnet_naming_rule.private_members_with_underscore.severity = warning
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private
+
+dotnet_naming_style.prefix_underscore.capitalization = camel_case
+dotnet_naming_style.prefix_underscore.required_prefix = _
+
+#### Using Directives ####
+# Summary: Keeps imports clean by placing System headers first and removing unused ones.
+dotnet_separate_import_directive_groups = true
+dotnet_sort_system_directives_first = true
+dotnet_diagnostic.IDE0005.severity = warning
+
+#### Style & Braces ####
+# Summary: Enforces "Allman" style (braces on new lines) and requires braces even for single-line 'if' statements.
+# This prevents "logic bugs" where a line is added but not included in the conditional.
+csharp_new_line_before_open_brace = all
+csharp_prefer_simple_using_statement = true:suggestion
+csharp_style_expression_bodied_methods = true:suggestion
+csharp_style_namespace_declarations = file_scoped:warning
+
+#### Modern C# Features ####
+# Summary: Encourages newer syntax like Pattern Matching and File-Scoped Namespaces to reduce indentation.
+csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
+csharp_style_prefer_switch_expression = true:suggestion
+
+#### Spacing Rules ####
+# Summary: Controls the "noise" in the editor. Set to 'suggestion' so they don't drive you crazy, but keep the code tidy.
+csharp_space_after_keywords_in_control_flow_statements = true
+csharp_space_between_parentheses = false
+csharp_space_before_comma = false
+csharp_space_after_comma = true
+
+# Web / Frontend (Inside the .NET Project)
+# Summary: Web files typically use 2 spaces by industry standard (JS/TS/JSON).
+[*.{json,js,ts,tsx,html}]
+indent_size = 2
+
+# XML / Config files
+[*.{xml,config,csproj,sln}]
+indent_size = 2
