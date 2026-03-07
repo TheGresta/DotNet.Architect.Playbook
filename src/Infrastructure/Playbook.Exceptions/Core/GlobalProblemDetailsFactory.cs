@@ -8,9 +8,26 @@ using Playbook.Exceptions.Models;
 
 namespace Playbook.Exceptions.Core;
 
+/// <summary>
+/// A custom implementation of <see cref="ProblemDetailsFactory"/> that standardizes the creation 
+/// of <see cref="ApiErrorResponse"/> throughout the ASP.NET Core middleware pipeline.
+/// This factory integrates the <see cref="ILocalizedStringProvider"/> to ensure all 
+/// automatically generated problem details (e.g., from [ApiController] validation) are localized.
+/// </summary>
 public sealed class GlobalProblemDetailsFactory(
     ILocalizedStringProvider stringProvider) : ProblemDetailsFactory
 {
+    /// <summary>
+    /// Creates a standardized <see cref="ProblemDetails"/> (as <see cref="ApiErrorResponse"/>) 
+    /// for a given set of parameters.
+    /// </summary>
+    /// <param name="httpContext">The current HTTP context.</param>
+    /// <param name="statusCode">The HTTP status code to associate with the error.</param>
+    /// <param name="title">The summary title of the error.</param>
+    /// <param name="type">A URI reference that identifies the problem type.</param>
+    /// <param name="detail">A detailed explanation of the error.</param>
+    /// <param name="instance">A URI reference that identifies the specific occurrence of the problem.</param>
+    /// <returns>A configured instance of <see cref="ApiErrorResponse"/>.</returns>
     public override ProblemDetails CreateProblemDetails(
         HttpContext httpContext,
         int? statusCode = null,
@@ -32,6 +49,18 @@ public sealed class GlobalProblemDetailsFactory(
         };
     }
 
+    /// <summary>
+    /// Creates a <see cref="ValidationProblemDetails"/> (as <see cref="ApiErrorResponse"/>) 
+    /// based on the provided <see cref="ModelStateDictionary"/>.
+    /// </summary>
+    /// <param name="httpContext">The current HTTP context.</param>
+    /// <param name="modelStateDictionary">The dictionary containing model validation errors.</param>
+    /// <param name="statusCode">The HTTP status code. Defaults to 400.</param>
+    /// <param name="title">The error title.</param>
+    /// <param name="type">The problem type URI.</param>
+    /// <param name="detail">The error detail message.</param>
+    /// <param name="instance">The specific request path.</param>
+    /// <returns>An <see cref="ApiErrorResponse"/> populated with localized validation errors.</returns>
     public override ValidationProblemDetails CreateValidationProblemDetails(
         HttpContext httpContext,
         ModelStateDictionary modelStateDictionary,
@@ -54,6 +83,7 @@ public sealed class GlobalProblemDetailsFactory(
             Errors = new Dictionary<string, string[]>(modelStateDictionary.Count)
         };
 
+        // Iterates through model state to translate framework-generated error messages.
         foreach (var (key, entry) in modelStateDictionary)
         {
             if (entry.Errors.Count == 0) continue;
@@ -66,12 +96,16 @@ public sealed class GlobalProblemDetailsFactory(
                 errorMessages[i] = stringProvider.Get(entry.Errors[i].ErrorMessage);
             }
 
+            // Ensures keys are added only once to prevent dictionary collision.
             response.Errors.TryAdd(key, errorMessages);
         }
 
         return response;
     }
 
+    /// <summary>
+    /// Maps an HTTP status code to its corresponding localized title key.
+    /// </summary>
     private string GetTitleForStatus(int status) => status switch
     {
         StatusCodes.Status401Unauthorized => stringProvider.Get(TitleKeys.Unauthorized),
@@ -81,14 +115,20 @@ public sealed class GlobalProblemDetailsFactory(
         _ => stringProvider.Get(TitleKeys.InternalServer)
     };
 
+    /// <summary>
+    /// Maps an HTTP status code to its corresponding localized detail template.
+    /// </summary>
     private string GetDetailForStatus(int status) => status switch
     {
         StatusCodes.Status401Unauthorized => stringProvider.Get(DetailKeys.Unauthorized),
         StatusCodes.Status403Forbidden => stringProvider.Get(DetailKeys.Unauthorized),
-        StatusCodes.Status404NotFound => stringProvider.Get(DetailKeys.NotFound), // Optional: add generic "Resource not found"
+        StatusCodes.Status404NotFound => stringProvider.Get(DetailKeys.NotFound),
         _ => stringProvider.Get(DetailKeys.UnexpectedError)
     };
 
+    /// <summary>
+    /// Maps an HTTP status code to a machine-readable internal error code.
+    /// </summary>
     private static string GetErrorCodeForStatus(int status) => status switch
     {
         StatusCodes.Status401Unauthorized => ErrorCodes.Unauthorized,

@@ -1,5 +1,8 @@
 ﻿namespace Playbook.Exceptions.Constants;
 
+/// <summary>
+/// Defines keys for localized titles used in error responses or UI components.
+/// </summary>
 public static class TitleKeys
 {
     private const string P = LocalizationPrefixes.Info;

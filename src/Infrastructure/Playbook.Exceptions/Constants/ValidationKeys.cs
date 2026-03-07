@@ -1,5 +1,9 @@
 ﻿namespace Playbook.Exceptions.Constants;
 
+/// <summary>
+/// Defines keys for specific validation rules. These are typically mapped to 
+/// individual validation failures in a <see cref="ValidationException"/>.
+/// </summary>
 public static class ValidationKeys
 {
     private const string P = LocalizationPrefixes.Validation;

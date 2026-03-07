@@ -11,6 +11,11 @@ using Playbook.Exceptions.Models;
 
 namespace Playbook.Exceptions.Infrastructure;
 
+/// <summary>
+/// A high-performance, centralized exception handler implementing the .NET 8 <see cref="IExceptionHandler"/> interface.
+/// This middleware intercepts all unhandled exceptions, performs polymorphic mapping via <see cref="IExceptionMapper"/>,
+/// executes structured logging with PII redaction, and returns RFC 7807 compliant Problem Details.
+/// </summary>
 public sealed class GlobalExceptionHandler(
     IExceptionMapper mapper,
     ILocalizedStringProvider stringProvider,
@@ -20,6 +25,13 @@ public sealed class GlobalExceptionHandler(
 {
     private const string _logTemplate = "{StatusCode} {HttpMethod} {HttpPath} | [Customer:{CustomerNumber}] [Trace:{TraceId}] | {ErrorCode} | {ErrorMessage} | Details: {ValidationDetails}";
 
+    /// <summary>
+    /// Attempts to handle the exception by transforming it into a standardized API response.
+    /// </summary>
+    /// <param name="httpContext">The current HTTP request context.</param>
+    /// <param name="exception">The unhandled exception to process.</param>
+    /// <param name="cancellationToken">A token to monitor for operation cancellation.</param>
+    /// <returns>True if the exception was handled; otherwise, false.</returns>
     public async ValueTask<bool> TryHandleAsync(
         HttpContext httpContext,
         Exception exception,
@@ -30,11 +42,13 @@ public sealed class GlobalExceptionHandler(
             var traceId = httpContext.TraceIdentifier;
 
             // 1. Resolve Mapping via established Visitor/Double-Dispatch
+            // Checks if the exception supports self-mapping to avoid complex type checking in the handler.
             var details = exception is IMapableException mapable
                 ? mapable.Map(mapper)
                 : GetDefaultDetails();
 
             // 2. Optimized Logging
+            // Dispatches log entry with severity levels tuned to the HTTP status code.
             LogWithCorrectSeverity(httpContext, exception, details, traceId);
 
             // 3. Build RFC 7807 Response using .NET 8 Target-Typed New
@@ -47,6 +61,7 @@ public sealed class GlobalExceptionHandler(
                 Instance = httpContext.Request.Path,
                 TraceId = traceId,
                 Errors = details.Extensions ?? ReadOnlyDictionary<string, string[]>.Empty,
+                // Debug information is strictly restricted to development environments to prevent sensitive data leakage.
                 Debug = env.IsDevelopment() ? CreateDebugDetails(exception) : null
             };
 
@@ -60,10 +75,14 @@ public sealed class GlobalExceptionHandler(
         }
         catch (Exception secondaryException)
         {
+            // Fail-safe mechanism to ensure the client receives a valid JSON response even if the handler fails.
             return await HandleSafeFailAsync(httpContext, secondaryException, cancellationToken);
         }
     }
 
+    /// <summary>
+    /// Performs structured logging with dynamic severity and scope data.
+    /// </summary>
     private void LogWithCorrectSeverity(HttpContext context, Exception exception, ExceptionMappingResult details, string traceId)
     {
         var method = context.Request.Method;
@@ -76,7 +95,7 @@ public sealed class GlobalExceptionHandler(
             validationSummary = SanitizeErrorsForLogging(valEx.Errors);
         }
 
-        // Structured Logging: Avoid string concatenation in the message template
+        // Structured Logging: Data is passed as a dictionary for efficient indexing by log providers like Serilog.
         var scopeData = new Dictionary<string, object>
         {
             ["CustomerNumber"] = customerNumber,
@@ -99,6 +118,9 @@ public sealed class GlobalExceptionHandler(
         }
     }
 
+    /// <summary>
+    /// Serializes validation errors into a log-friendly string while redacting sensitive fields.
+    /// </summary>
     private static string SanitizeErrorsForLogging(IReadOnlyDictionary<string, ValidationError[]> errors)
     {
         var sb = new StringBuilder();
@@ -108,6 +130,7 @@ public sealed class GlobalExceptionHandler(
             for (int i = 0; i < val.Length; i++)
             {
                 var err = val[i];
+                // PII Protection: Compares against SecurityConstants.SensitiveKeys to mask passwords or tokens.
                 var displayVal = SecurityConstants.SensitiveKeys.Contains(key) ? "***" : (err.AttemptedValue ?? "null");
                 sb.Append(err.Message).Append("(Val: ").Append(displayVal).Append(')');
                 if (i < val.Length - 1) sb.Append(", ");
@@ -117,15 +140,24 @@ public sealed class GlobalExceptionHandler(
         return sb.ToString().Trim();
     }
 
+    /// <summary>
+    /// Recursively creates a debug detail object containing stack traces for internal development use.
+    /// </summary>
     private static DebugDetails CreateDebugDetails(Exception ex) =>
         new(ex.Message, ex.StackTrace, ex.InnerException is not null ? CreateDebugDetails(ex.InnerException) : null);
 
+    /// <summary>
+    /// Provides a default mapping for unhandled exceptions that do not provide specific domain context.
+    /// </summary>
     private ExceptionMappingResult GetDefaultDetails() => new(
         stringProvider.Get(TitleKeys.InternalServer),
         stringProvider.Get(DetailKeys.UnexpectedError),
         ErrorCodes.InternalServerError,
         StatusCodes.Status500InternalServerError);
 
+    /// <summary>
+    /// Final fallback handler to prevent a total application crash or an empty 500 response.
+    /// </summary>
     private static async ValueTask<bool> HandleSafeFailAsync(HttpContext context, Exception secEx, CancellationToken ct)
     {
         context.Response.StatusCode = 500;

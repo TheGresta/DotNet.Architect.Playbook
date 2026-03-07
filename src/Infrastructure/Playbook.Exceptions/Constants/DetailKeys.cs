@@ -1,5 +1,9 @@
 ﻿namespace Playbook.Exceptions.Constants;
 
+/// <summary>
+/// Defines keys for detailed error messages and templates.
+/// These are typically used to fetch verbose descriptions from localization resources.
+/// </summary>
 public static class DetailKeys
 {
     private const string P = LocalizationPrefixes.Detail;

@@ -1,5 +1,9 @@
 ﻿namespace Playbook.Exceptions.Constants;
 
+/// <summary>
+/// Standardized machine-readable error codes used for programmatic error handling
+/// and consistent API response structures.
+/// </summary>
 public static class ErrorCodes
 {
     public const string NotFound = "NOT_FOUND";
