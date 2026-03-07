@@ -12,4 +12,5 @@ public static class TitleKeys
     public const string BusinessRule = P + "BUSINESS_RULE";
     public const string InternalServer = P + "INTERNAL_SERVER";
     public const string Unauthorized = P + "UNAUTHORIZED";
+    public const string Forbidden = P + "FORBIDDEN";
 }

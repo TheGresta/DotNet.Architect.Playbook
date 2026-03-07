@@ -109,7 +109,7 @@ public sealed class GlobalProblemDetailsFactory(
     private string GetTitleForStatus(int status) => status switch
     {
         StatusCodes.Status401Unauthorized => stringProvider.Get(TitleKeys.Unauthorized),
-        StatusCodes.Status403Forbidden => stringProvider.Get(TitleKeys.Unauthorized),
+        StatusCodes.Status403Forbidden => stringProvider.Get(TitleKeys.Forbidden),
         StatusCodes.Status404NotFound => stringProvider.Get(TitleKeys.NotFound),
         StatusCodes.Status422UnprocessableEntity => stringProvider.Get(TitleKeys.BusinessRule),
         _ => stringProvider.Get(TitleKeys.InternalServer)
@@ -121,8 +121,10 @@ public sealed class GlobalProblemDetailsFactory(
     private string GetDetailForStatus(int status) => status switch
     {
         StatusCodes.Status401Unauthorized => stringProvider.Get(DetailKeys.Unauthorized),
-        StatusCodes.Status403Forbidden => stringProvider.Get(DetailKeys.Unauthorized),
+        StatusCodes.Status403Forbidden => stringProvider.Get(DetailKeys.Forbidden),
         StatusCodes.Status404NotFound => stringProvider.Get(DetailKeys.NotFound),
+        StatusCodes.Status400BadRequest => stringProvider.Get(DetailKeys.ValidationSummary),
+        StatusCodes.Status422UnprocessableEntity => stringProvider.Get(DetailKeys.BusinessRule),
         _ => stringProvider.Get(DetailKeys.UnexpectedError)
     };
 

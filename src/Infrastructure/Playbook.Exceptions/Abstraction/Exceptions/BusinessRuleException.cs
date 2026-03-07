@@ -19,7 +19,7 @@ public sealed class BusinessRuleException(string ruleKey, params object[] args)
     /// <summary>
     /// Gets the contextual arguments associated with the rule violation.
     /// </summary>
-    public object[] Args { get; } = args;
+    public object[] Args { get; } = args is null ? [] : (object[])args.Clone();
 
     /// <summary>
     /// Dispatches the exception to the appropriate mapping logic using the Visitor pattern.

@@ -12,4 +12,5 @@ public static class ErrorCodes
     public const string InternalServerError = "INTERNAL_SERVER_ERROR";
     public const string ActionFailed = "ACTION_FAILED";
     public const string Unauthorized = "UNAUTHORIZED";
+    public const string Forbidden = "FORBIDDEN";
 }

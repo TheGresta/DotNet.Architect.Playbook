@@ -12,14 +12,14 @@ public sealed class DomainExceptionMapper(ILocalizedStringProvider stringProvide
 {
     /// <summary>
     /// Entry point for mapping an exception. Attempts to use polymorphic dispatch 
-    /// if the exception implements <see cref="IMapableException"/>.
+    /// if the exception implements <see cref="IMappableException"/>.
     /// </summary>
     /// <param name="exception">The exception to be transformed.</param>
     /// <returns>A localized mapping result.</returns>
     public ExceptionMappingResult Map(Exception exception)
     {
         // Double dispatch: If the exception knows how to map itself, let it choose the specific MapSpecific overload.
-        if (exception is IMapableException mapable)
+        if (exception is IMappableException mapable)
         {
             return mapable.Map(this);
         }
@@ -42,7 +42,7 @@ public sealed class DomainExceptionMapper(ILocalizedStringProvider stringProvide
     public ExceptionMappingResult MapSpecific(BusinessRuleException ex) =>
         new(stringProvider.Get(TitleKeys.BusinessRule),
             stringProvider.Get(ex.RuleKey, ex.Args),
-            ex.RuleKey,
+            ex.ErrorCode,
             StatusCodes.Status422UnprocessableEntity);
 
     /// <summary>
@@ -67,11 +67,11 @@ public sealed class DomainExceptionMapper(ILocalizedStringProvider stringProvide
     }
 
     /// <summary>
-    /// Provides a generic fallback for exceptions that do not implement <see cref="IMapableException"/>.
+    /// Provides a generic fallback for exceptions that do not implement <see cref="IMappableException"/>.
     /// </summary>
     public ExceptionMappingResult MapFallback(Exception ex) =>
-        new(stringProvider.Get(TitleKeys.BusinessRule),
-            stringProvider.Get(ErrorCodes.ActionFailed),
-            ErrorCodes.BusinessRuleViolation,
-            StatusCodes.Status422UnprocessableEntity);
+        new(stringProvider.Get(TitleKeys.InternalServer),
+            stringProvider.Get(DetailKeys.UnexpectedError),
+            ErrorCodes.InternalServerError,
+            StatusCodes.Status500InternalServerError);
 }

@@ -9,6 +9,10 @@ namespace Playbook.Exceptions.Abstraction;
 public interface IExceptionMapper
 {
     /// <summary>
+    /// Maps a <see cref="Exception"/> to an <see cref="ExceptionMappingResult"/>.
+    /// </summary>
+    ExceptionMappingResult Map(Exception ex);
+    /// <summary>
     /// Maps a <see cref="NotFoundException"/> to an <see cref="ExceptionMappingResult"/>.
     /// </summary>
     ExceptionMappingResult MapSpecific(NotFoundException ex);

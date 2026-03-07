@@ -43,7 +43,7 @@ public sealed class GlobalExceptionHandler(
 
             // 1. Resolve Mapping via established Visitor/Double-Dispatch
             // Checks if the exception supports self-mapping to avoid complex type checking in the handler.
-            var details = exception is IMapableException mapable
+            var details = exception is IMappableException mapable
                 ? mapable.Map(mapper)
                 : GetDefaultDetails();
 
@@ -102,6 +102,7 @@ public sealed class GlobalExceptionHandler(
             ["TraceId"] = traceId,
             ["StatusCode"] = details.StatusCode,
             ["ErrorCode"] = details.Code,
+            ["ErrorMessage"] = details.Detail,
             ["HttpMethod"] = method,
             ["HttpPath"] = path,
             ["ValidationDetails"] = validationSummary
@@ -110,11 +111,11 @@ public sealed class GlobalExceptionHandler(
         using (logger.BeginScope(scopeData))
         {
             if (details.StatusCode >= 500)
-                logger.LogError(exception, _logTemplate, details.StatusCode, method, path, customerNumber, traceId, details.Code, exception.Message, validationSummary);
+                logger.LogError(exception, _logTemplate, details.StatusCode, method, path, customerNumber, traceId, details.Code, details.Detail, validationSummary);
             else if (details.StatusCode is 401 or 403)
-                logger.LogWarning(_logTemplate, details.StatusCode, method, path, customerNumber, traceId, details.Code, exception.Message, validationSummary);
+                logger.LogWarning(_logTemplate, details.StatusCode, method, path, customerNumber, traceId, details.Code, details.Detail, validationSummary);
             else
-                logger.LogInformation(_logTemplate, details.StatusCode, method, path, customerNumber, traceId, details.Code, exception.Message, validationSummary);
+                logger.LogInformation(_logTemplate, details.StatusCode, method, path, customerNumber, traceId, details.Code, details.Detail, validationSummary);
         }
     }
 
@@ -143,8 +144,14 @@ public sealed class GlobalExceptionHandler(
     /// <summary>
     /// Recursively creates a debug detail object containing stack traces for internal development use.
     /// </summary>
-    private static DebugDetails CreateDebugDetails(Exception ex) =>
-        new(ex.Message, ex.StackTrace, ex.InnerException is not null ? CreateDebugDetails(ex.InnerException) : null);
+    private static DebugDetails CreateDebugDetails(Exception ex, int depth = 0)
+    {
+        const int maxDepth = 10;
+        var inner = ex.InnerException is not null && depth < maxDepth
+            ? CreateDebugDetails(ex.InnerException, depth + 1)
+            : null;
+        return new(ex.Message, ex.StackTrace, inner);
+    }
 
     /// <summary>
     /// Provides a default mapping for unhandled exceptions that do not provide specific domain context.
@@ -161,7 +168,16 @@ public sealed class GlobalExceptionHandler(
     private static async ValueTask<bool> HandleSafeFailAsync(HttpContext context, Exception secEx, CancellationToken ct)
     {
         context.Response.StatusCode = 500;
-        await context.Response.WriteAsJsonAsync(new { Status = 500, Title = "Critical Failure", TraceId = context.TraceIdentifier }, ct);
+
+        await context.Response.WriteAsJsonAsync(new ApiErrorResponse
+        {
+            Status = 500,
+            Title = "Critical Failure",
+            Detail = "An unexpected error occurred while processing the error response.",
+            ErrorCode = ErrorCodes.InternalServerError,
+            TraceId = context.TraceIdentifier
+        }, ct);
+
         return true;
     }
 }

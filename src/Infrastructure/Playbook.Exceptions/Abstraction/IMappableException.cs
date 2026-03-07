@@ -6,7 +6,7 @@ namespace Playbook.Exceptions.Abstraction;
 /// Defines a contract for exceptions that support polymorphic mapping to external error formats.
 /// Implements the Double Dispatch mechanism of the Visitor pattern.
 /// </summary>
-public interface IMapableException
+public interface IMappableException
 {
     /// <summary>
     /// Maps the current exception instance using the provided mapper.

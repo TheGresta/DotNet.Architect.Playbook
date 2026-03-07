@@ -5,13 +5,11 @@ namespace Playbook.Exceptions.Abstraction.Exceptions;
 /// <summary>
 /// Serves as the base class for all domain-specific exceptions within the application.
 /// This abstract class enforces a standardized <see cref="ErrorCode"/> and implements
-/// <see cref="IMapableException"/> to support the Visitor-based mapping pattern.
+/// <see cref="IMappableException"/> to support the Visitor-based mapping pattern.
 /// </summary>
 /// <param name="errorCode">A unique, machine-readable string identifying the specific error type.</param>
-/// <param name="message">A human-readable explanation of the exception. Defaults to null.</param>
-/// <param name="innerException">The exception that is the cause of the current exception, if applicable.</param>
-public abstract class DomainException(string errorCode, string? message = null, Exception? innerException = null)
-    : Exception(message, innerException), IMapableException
+public abstract class DomainException(string errorCode)
+    : Exception(errorCode), IMappableException
 {
     /// <summary>
     /// Gets the unique error code associated with this exception instance.

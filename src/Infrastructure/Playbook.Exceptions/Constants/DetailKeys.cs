@@ -12,4 +12,6 @@ public static class DetailKeys
     public const string UnexpectedError = P + "UNEXPECTED_ERROR";
     public const string ValidationSummary = P + "VALIDATION_SUMMARY";
     public const string Unauthorized = P + "UNAUTHORIZED";
+    public const string Forbidden = P + "FORBIDDEN";
+    public const string BusinessRule = P + "BUSINESS_RULE";
 }
