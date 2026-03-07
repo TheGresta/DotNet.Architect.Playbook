@@ -1,6 +1,8 @@
 ﻿using Elastic.Clients.Elasticsearch;
 using Elastic.Transport;
+
 using Microsoft.Extensions.Options;
+
 using Playbook.Persistence.ElasticSearch.Application;
 
 namespace Playbook.Persistence.ElasticSearch.Persistence;
@@ -99,15 +101,15 @@ public static class SearchDependencyInjection
             settings.Authentication(new ApiKey(options.ApiKey));
             return;
         }
-        
+
         var hasUsername = !string.IsNullOrWhiteSpace(options.Username);
         var hasPassword = !string.IsNullOrWhiteSpace(options.Password);
-        
+
         if (hasUsername ^ hasPassword)
         {
             throw new InvalidOperationException("Elasticsearch basic authentication requires both Username and Password.");
         }
-        
+
         if (hasUsername)
         {
             settings.Authentication(new BasicAuthentication(options.Username!, options.Password!));

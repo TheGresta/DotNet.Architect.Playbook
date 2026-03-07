@@ -22,7 +22,7 @@ public class SearchQuery<T> where T : BaseDocument
     public int Page
     {
         get => page;
-        set => page = value< 1 ? 1 : value;
+        set => page = value < 1 ? 1 : value;
     }
 
     /// <summary>
@@ -31,7 +31,7 @@ public class SearchQuery<T> where T : BaseDocument
     public int PageSize
     {
         get => pageSize;
-        set => pageSize = value< 1 ? 10 : value;
+        set => pageSize = value < 1 ? 10 : value;
     }
 
     /// <summary>

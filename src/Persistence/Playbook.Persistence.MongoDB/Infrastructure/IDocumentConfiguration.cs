@@ -1,4 +1,5 @@
 using MongoDB.Driver;
+
 using Playbook.Persistence.MongoDB.Domain;
 
 namespace Playbook.Persistence.MongoDB.Infrastructure;

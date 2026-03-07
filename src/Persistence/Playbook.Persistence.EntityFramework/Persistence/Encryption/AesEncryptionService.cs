@@ -1,6 +1,8 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
+
 using Microsoft.Extensions.Options;
+
 using Playbook.Persistence.EntityFramework.Persistence.Options;
 
 namespace Playbook.Persistence.EntityFramework.Persistence.Encryption;
@@ -22,13 +24,13 @@ internal class AesEncryptionService(IOptions<EncryptionOptions> encryptionOption
     {
         if (string.IsNullOrEmpty(key))
             throw new ArgumentException("Encryption key cannot be null or empty.", nameof(key));
-        
+
         var keyBytes = Encoding.UTF8.GetBytes(key);
         if (keyBytes.Length != 16 && keyBytes.Length != 24 && keyBytes.Length != 32)
             throw new ArgumentException(
                 $"Encryption key must be 16, 24, or 32 bytes for AES. Current length: {keyBytes.Length} bytes.",
                 nameof(key));
-        
+
         return keyBytes;
     }
 

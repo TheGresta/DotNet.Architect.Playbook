@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+
 using Playbook.Persistence.EntityFramework.Domain.Base;
 
 namespace Playbook.Persistence.EntityFramework.Persistence.Configs.Base;

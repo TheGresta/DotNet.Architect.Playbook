@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+
 using Playbook.Persistence.EntityFramework.Application;
 using Playbook.Persistence.EntityFramework.Persistence.Context;
 using Playbook.Persistence.EntityFramework.Persistence.Encryption;

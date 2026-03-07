@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics;
+
 using Elastic.Clients.Elasticsearch;
 using Elastic.Transport.Products.Elasticsearch;
+
 using Playbook.Persistence.ElasticSearch.Application;
 using Playbook.Persistence.ElasticSearch.Application.Models;
 
@@ -69,7 +71,7 @@ public sealed class ElasticsearchService<T>(
             logger.LogError("Elasticsearch: Bulk request failed at transport level. Debug: {Debug}", bulkResponse.DebugInformation);
             return SearchOperationResult.Failure("Bulk operation transport failure.");
         }
-        
+
         // 2. Per-item failures within an HTTP 200 response
         if (bulkResponse.Errors)
         {
@@ -77,7 +79,7 @@ public sealed class ElasticsearchService<T>(
             logger.LogError("Elasticsearch: Bulk indexing had {Count} item-level errors. Debug: {Debug}", errorCount, bulkResponse.DebugInformation);
             return SearchOperationResult.Failure($"Bulk operation failed with {errorCount} item errors.");
         }
-        
+
         return SearchOperationResult.Success();
     }
 

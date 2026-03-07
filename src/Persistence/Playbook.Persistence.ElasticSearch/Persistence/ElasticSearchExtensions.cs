@@ -1,9 +1,11 @@
 ﻿using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
+
 using Elastic.Clients.Elasticsearch;
 using Elastic.Clients.Elasticsearch.Mapping;
 using Elastic.Clients.Elasticsearch.QueryDsl;
+
 using Playbook.Persistence.ElasticSearch.Application.Models;
 
 namespace Playbook.Persistence.ElasticSearch.Persistence;

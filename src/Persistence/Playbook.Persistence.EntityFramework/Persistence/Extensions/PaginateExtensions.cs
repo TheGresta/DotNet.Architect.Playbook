@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+
 using Playbook.Persistence.EntityFramework.Domain.Base;
 
 namespace Playbook.Persistence.EntityFramework.Persistence.Extensions;

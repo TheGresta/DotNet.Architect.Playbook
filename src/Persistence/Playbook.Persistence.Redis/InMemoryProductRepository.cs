@@ -1,4 +1,5 @@
 ﻿using System.Collections.Concurrent;
+
 using Playbook.Persistence.Redis.Models;
 
 namespace Playbook.Persistence.Redis;
