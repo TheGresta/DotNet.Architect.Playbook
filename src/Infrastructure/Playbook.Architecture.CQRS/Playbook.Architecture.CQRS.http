@@ -1,0 +1,6 @@
+@Playbook.Architecture.CQRS_HostAddress = http://localhost:5219
+
+GET {{Playbook.Architecture.CQRS_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
