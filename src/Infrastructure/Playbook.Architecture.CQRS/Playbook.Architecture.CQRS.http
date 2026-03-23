@@ -1,6 +1,18 @@
-@Playbook.Architecture.CQRS_HostAddress = http://localhost:5219
+@Host = http://localhost:5219
+@ApiBase = {{Host}}/api/products
 
-GET {{Playbook.Architecture.CQRS_HostAddress}}/weatherforecast/
+# @name CreateProduct
+POST {{ApiBase}}
+Content-Type: application/json
+
+{
+  "name": "Gaming Mouse",
+  "price": -10,
+  "sku": "MOUSE-001"
+}
+
+# @name GetProductById
+GET {{ApiBase}}/419457d1-00b6-439f-aac9-dfd1e08e9ec1
 Accept: application/json
 
 ###
