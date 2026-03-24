@@ -1,18 +1,28 @@
-@Host = http://localhost:5219
-@ApiBase = {{Host}}/api/products
+@Hostname = localhost
+@Port = 5219
+@Host = http://{{Hostname}}:{{Port}}
 
-# @name CreateProduct
-POST {{ApiBase}}
+### 1. Create a Product
+# @name createProduct
+POST {{Host}}/api/products
 Content-Type: application/json
 
 {
-  "name": "Gaming Mouse",
-  "price": -10,
-  "sku": "MOUSE-001"
+  "name": "Mechanical Keyboard",
+  "price": 149.99,
+  "sku": "KBD-001-RGB"
 }
 
-# @name GetProductById
-GET {{ApiBase}}/419457d1-00b6-439f-aac9-dfd1e08e9ec1
-Accept: application/json
+### 3. Create Product with Invalid Price (Validation Test)
+POST {{Host}}/api/products
+Content-Type: application/json
 
-###
+{
+  "name": "Cheap Mouse",
+  "price": -10.00,
+  "sku": "MSE-002"
+}
+
+### 4. Get Non-Existent Product (NotFound Test)
+GET {{Host}}/api/products/3134c4dc-1974-47ac-85b3-f4e6203adcaa
+Accept: application/json

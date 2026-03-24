@@ -1,7 +1,6 @@
 ﻿using ErrorOr;
 
-using MediatR;
-
+using Playbook.Architecture.CQRS.Application.Common.Interfaces;
 using Playbook.Architecture.CQRS.Application.Features.Products.Dtos;
 
 namespace Playbook.Architecture.CQRS.Application.Features.Products.Commands.Create;
@@ -9,4 +8,4 @@ namespace Playbook.Architecture.CQRS.Application.Features.Products.Commands.Crea
 public record CreateProductCommand(
     string Name,
     decimal Price,
-    string Sku) : IRequest<ErrorOr<ProductResponse>>;
+    string Sku) : ICommand<ErrorOr<ProductResponse>>;

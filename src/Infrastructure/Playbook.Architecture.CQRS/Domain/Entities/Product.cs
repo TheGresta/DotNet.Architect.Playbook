@@ -1,20 +1,25 @@
 ﻿using ErrorOr;
 
-using Playbook.Architecture.CQRS.Domain.Common;
+using Playbook.Architecture.CQRS.Domain.ValueObjects;
 
 namespace Playbook.Architecture.CQRS.Domain.Entities;
 
-public class Product(Guid id, string name, decimal price, string sku) : Entity(id)
+public class Product(Guid id, string name, Price price, Sku sku) : Entity(id)
 {
     public string Name { get; private set; } = name;
-    public decimal Price { get; private set; } = price;
-    public string Sku { get; private set; } = sku;
+    public Price Price { get; private set; } = price;
+    public Sku Sku { get; private set; } = sku;
 
-    // Domain logic stays inside the entity
-    public ErrorOr<Success> UpdatePrice(decimal newPrice)
+    public ErrorOr<Updated> Update(string name, decimal priceValue)
     {
-        if (newPrice <= 0) return DomainErrors.Product.InvalidPrice;
-        Price = newPrice;
-        return Result.Success;
+        // We attempt to create a new Price Value Object
+        var priceResult = Price.Create(priceValue);
+
+        if (priceResult.IsError) return priceResult.Errors;
+
+        Name = name;
+        Price = priceResult.Value;
+
+        return Result.Updated;
     }
 }

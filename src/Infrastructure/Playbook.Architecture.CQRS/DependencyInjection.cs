@@ -17,16 +17,36 @@ public static class DependencyInjection
         {
             config.RegisterServicesFromAssembly(assembly);
 
-            // THE ORDER MATTERS HERE: Pipeline acts like an Onion
+            // 1. Global Exception Handling (The outermost layer)
+            // Catches anything that explodes in any other behavior or handler.
             config.AddOpenBehavior(typeof(ExceptionHandlingBehavior<,>));
+
+            // 2. Logging (Observability)
+            // Records the start/end and timing of the request.
             config.AddOpenBehavior(typeof(LoggingBehavior<,>));
+
+            // 3. Validation (The Gatekeeper)
+            // CRITICAL: Must be before Caching. We don't want to hit the cache
+            // or check Redis for a request that has an invalid ID format.
             config.AddOpenBehavior(typeof(ValidationBehavior<,>));
+
+            // 4. Query Caching (The Fast Path)
+            // Returns early for GETs. If it's a Command, it just passes through.
             config.AddOpenBehavior(typeof(QueryCachingBehavior<,>));
+
+            // 5. Transaction Management (Consistency)
+            // Opens the SQL Transaction.
             config.AddOpenBehavior(typeof(TransactionBehavior<,>));
+
+            // 6. Cache Invalidation (The Cleanup)
+            // Runs after the Handler. Only clears cache if Transaction committed.
+            config.AddOpenBehavior(typeof(CacheInvalidationBehavior<,>));
         });
 
         services.AddValidatorsFromAssembly(assembly);
-        services.AddMemoryCache();
+
+        // Big Tech Upgrade: Switch from MemoryCache to Distributed
+        services.AddDistributedMemoryCache();
 
         return services;
     }
