@@ -8,27 +8,39 @@ namespace Playbook.Messaging.SignalR.Infrastructure.Market;
 
 public sealed class MarketDataSimulator(IHubContext<StockTickerHub, IStockClient> hubContext) : BackgroundService
 {
-    private readonly string[] _symbols = ["AAPL", "MSFT", "GOOGL", "TSLA", "BTC", "ETH"];
+    private static readonly string[] _symbols = ["AAPL", "MSFT", "GOOGL", "TSLA", "BTC", "ETH"];
+    private static readonly TimeSpan _tickInterval = TimeSpan.FromMilliseconds(100);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // PeriodicTimer is more precise than Task.Delay for high-frequency ticks
-        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(100));
+        using var timer = new PeriodicTimer(_tickInterval);
 
-        while (await timer.WaitForNextTickAsync(stoppingToken))
+        try
         {
-            // We use Task.WhenAll to push all symbols in parallel 
-            // without waiting for the first one to finish before starting the second.
-            var tasks = _symbols.Select(symbol =>
+            while (await timer.WaitForNextTickAsync(stoppingToken))
             {
-                var price = GenerateMockPrice(symbol);
-                return hubContext.Clients.Group(symbol).ReceivePriceUpdate(price);
-            });
+                // Optimization: Avoid LINQ overhead and array allocations in a high-frequency (100ms) loop.
+                var tasks = new Task[_symbols.Length];
 
-            await Task.WhenAll(tasks);
+                for (var i = 0; i < _symbols.Length; i++)
+                {
+                    var symbol = _symbols[i];
+                    var price = GenerateMockPrice(symbol);
+                    tasks[i] = hubContext.Clients.Group(symbol).ReceivePriceUpdate(price);
+                }
+
+                await Task.WhenAll(tasks);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected shutdown behavior
         }
     }
 
     private static StockPrice GenerateMockPrice(string symbol) =>
-        new(symbol, Random.Shared.Next(100, 1000), Random.Shared.NextDouble(), DateTime.UtcNow);
+        new(symbol,
+            Random.Shared.Next(100, 1000),
+            Random.Shared.NextDouble(),
+            DateTime.UtcNow);
 }

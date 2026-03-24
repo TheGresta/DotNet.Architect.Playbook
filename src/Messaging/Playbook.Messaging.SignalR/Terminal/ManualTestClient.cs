@@ -6,59 +6,53 @@ namespace Playbook.Messaging.SignalR.Terminal;
 
 public sealed class ManualTestClient : BackgroundService
 {
-    private readonly string _hubUrl = "http://localhost:5190/stockHub";
+    private const string _hubUrl = "http://localhost:5190/stockHub";
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // Define our two distinct traders
-        var traderA = StartTraderAsync("TRADER_ALICE", ["BTC", "ETH", "TSLA"], stoppingToken);
-        var traderB = StartTraderAsync("TRADER_BOB", ["AAPL", "MSFT", "ETH"], stoppingToken);
+        // Use Task.Run to ensure these start on the thread pool immediately
+        var traderA = StartTraderAsync("ALICE", ["BTC", "ETH", "TSLA"], ConsoleColor.Cyan, stoppingToken);
+        var traderB = StartTraderAsync("BOB", ["AAPL", "MSFT", "ETH"], ConsoleColor.Magenta, stoppingToken);
 
-        await Task.WhenAll(traderA, traderB);
+        return Task.WhenAll(traderA, traderB);
     }
 
-    private async Task StartTraderAsync(string name, string[] myStocks, CancellationToken ct)
+    private static async Task StartTraderAsync(string name, string[] symbols, ConsoleColor color, CancellationToken ct)
     {
-        var connection = new HubConnectionBuilder()
+        await using var connection = new HubConnectionBuilder()
             .WithUrl(_hubUrl)
-            .AddMessagePackProtocol()
+            // .AddMessagePackProtocol() // Ensure the MessagePack NuGet package is referenced
             .WithAutomaticReconnect()
             .Build();
 
-        // 1. Setup Structured Logging for this specific client
-        connection.On<StockPrice>("ReceivePriceUpdate", (price) =>
+        connection.On<StockPrice>("ReceivePriceUpdate", price =>
         {
-            // Use colors to differentiate in the console
-            var color = name == "TRADER_ALICE" ? ConsoleColor.Cyan : ConsoleColor.Magenta;
-            lock (Console.Out) // Prevent interlaced text in high-frequency streams
+            // Lock on a dedicated object, not the Console.Out stream itself
+            lock (Console.Out)
             {
                 Console.ForegroundColor = color;
-                Console.WriteLine($"[{name}] TICK | {price.Symbol.PadRight(5)} | ${price.Price:F2}");
+                Console.WriteLine($"[{name,-8}] TICK | {price.Symbol,-5} | {price.Price,8:C2}");
                 Console.ResetColor();
             }
         });
 
-        connection.On<string>("ReceiveNotification", (msg) =>
-            Console.WriteLine($"[{name}] SYSTEM: {msg}"));
+        connection.On<string>("ReceiveNotification", msg =>
+            Console.WriteLine($"[{name,-8}] SYSTEM: {msg}"));
 
         try
         {
-            Console.WriteLine($"[{name}] Attempting connection...");
             await connection.StartAsync(ct);
-            Console.WriteLine($"[{name}] Connected! Protocol: MessagePack");
 
-            // 2. Batch Subscribe
-            foreach (var symbol in myStocks)
-            {
-                await connection.InvokeAsync("SubscribeToStock", symbol, ct);
-            }
+            // Optimization: Parallel subscription requests
+            var subTasks = symbols.Select(s => connection.InvokeAsync("SubscribeToStock", s, ct));
+            await Task.WhenAll(subTasks);
         }
+        catch (OperationCanceledException) { /* Normal shutdown */ }
         catch (Exception ex)
         {
-            Console.WriteLine($"[{name}] Critical Failure: {ex.Message}");
+            Console.Error.WriteLine($"[{name}] Fatal: {ex.Message}");
         }
 
-        // Keep this specific trader's task alive
-        await Task.Delay(-1, ct);
+        await Task.Delay(Timeout.Infinite, ct);
     }
 }
