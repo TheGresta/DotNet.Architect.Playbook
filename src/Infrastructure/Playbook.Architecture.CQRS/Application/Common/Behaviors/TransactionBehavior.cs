@@ -6,7 +6,8 @@ using Playbook.Architecture.CQRS.Application.Common.Interfaces;
 
 namespace Playbook.Architecture.CQRS.Application.Common.Behaviors;
 
-public class TransactionBehavior<TRequest, TResponse>(
+public sealed class TransactionBehavior<TRequest, TResponse>(
+    // IDbContextTransaction or IUnitOfWork would be injected here
     ILogger<TransactionBehavior<TRequest, TResponse>> logger)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : ICommand<TResponse>
@@ -15,38 +16,44 @@ public class TransactionBehavior<TRequest, TResponse>(
     public async Task<TResponse> Handle(
         TRequest request,
         RequestHandlerDelegate<TResponse> next,
-        CancellationToken ct)
+        CancellationToken cancellationToken)
     {
-        logger.LogInformation("--> Starting transaction for {CommandName}", typeof(TRequest).Name);
+        return await next();
 
-        // In a real app, you would use your DbContext or UnitOfWork here
-        //using var transaction = await unitOfWork.BeginTransactionAsync(ct);
+        //var strategy = dbContext.Database.CreateExecutionStrategy();
 
-        try
-        {
-            var response = await next(ct);
+        //return await strategy.ExecuteAsync(async () =>
+        //{
+        //    dbContext.ChangeTracker.Clear();
+        //    // Use a higher isolation level if your domain requires strict consistency
+        //    await using var transaction = await dbContext.Database.BeginTransactionAsync(
+        //        IsolationLevel.ReadCommitted,
+        //        cancellationToken);
 
-            if (!response.IsError)
-            {
-                //await unitOfWork.SaveChangesAsync(ct);
-                //await transaction.CommitAsync(ct);
-                logger.LogInformation("--> Transaction committed for {CommandName}", typeof(TRequest).Name);
-            }
-            else
-            {
-                // ErrorOr logic: If there's a domain error, we roll back 
-                // because we don't want partial state changes.
-                //await transaction.RollbackAsync(ct);
-                logger.LogWarning("--> Transaction rolled back due to Domain Error in {CommandName}", typeof(TRequest).Name);
-            }
+        //    try
+        //    {
+        //        var response = await next();
 
-            return response;
-        }
-        catch (Exception ex)
-        {
-            //await transaction.RollbackAsync(ct);
-            logger.LogError(ex, "--> Transaction rolled back due to Exception in {CommandName}", typeof(TRequest).Name);
-            throw; // Re-throw so ExceptionHandlingBehavior can catch it
-        }
+        //        if (response.IsError)
+        //        {
+        //            logger.LogWarning("Transaction rollback: Domain Error in {CommandName}", typeof(TRequest).Name);
+        //            await transaction.RollbackAsync(cancellationToken);
+        //            return response;
+        //        }
+
+        //        await dbContext.SaveChangesAsync(cancellationToken);
+        //        await transaction.CommitAsync(cancellationToken);
+
+        //        return response;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        logger.LogError(ex, "Transaction failed: Forced rollback for {CommandName}", typeof(TRequest).Name);
+
+        //        // Rollback without the request's CT to ensure it finishes even if the user disconnected
+        //        await transaction.RollbackAsync(CancellationToken.None);
+        //        throw;
+        //    }
+        //});
     }
 }

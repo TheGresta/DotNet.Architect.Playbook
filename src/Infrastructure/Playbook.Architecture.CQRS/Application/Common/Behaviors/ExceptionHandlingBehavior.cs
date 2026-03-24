@@ -1,46 +1,47 @@
-﻿using ErrorOr;
+﻿using System.Reflection;
+
+using ErrorOr;
 
 using MediatR;
 
 namespace Playbook.Architecture.CQRS.Application.Common.Behaviors;
 
-public class ExceptionHandlingBehavior<TRequest, TResponse>(
+public sealed class ExceptionHandlingBehavior<TRequest, TResponse>(
     ILogger<ExceptionHandlingBehavior<TRequest, TResponse>> logger)
     : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IRequest<TResponse>
+    where TRequest : notnull
     where TResponse : IErrorOr
 {
+    private static readonly MethodOrBuilder _errorResultFactory = CreateFactory();
+
     public async Task<TResponse> Handle(
         TRequest request,
         RequestHandlerDelegate<TResponse> next,
-        CancellationToken ct)
+        CancellationToken cancellationToken)
     {
         try
         {
-            return await next(ct);
+            return await next(cancellationToken);
         }
         catch (Exception ex)
         {
-            // 1. Log the full stack trace for internal debugging
-            logger.LogError(ex, "Unhandled exception occurred for {RequestName}", typeof(TRequest).Name);
+            string requestName = typeof(TRequest).Name;
+            logger.LogError(ex, "Unhandled exception occurred for {RequestName}", requestName);
 
-            // 2. Return a generic "Unexpected" error to the user
-            var error = Error.Unexpected(
+            return _errorResultFactory(Error.Unexpected(
                 code: "General.UnhandledException",
-                description: "An unexpected error occurred on the server.");
-
-            // 3. Use our static helper to create the ErrorOr response without 'dynamic'
-            return CreateErrorResult(error);
+                description: "An unexpected error occurred on the server."));
         }
     }
 
-    private static TResponse CreateErrorResult(Error error)
-    {
-        // Big Tech optimization: We convert the single error into a list
-        var errors = new List<Error> { error };
+    private delegate TResponse MethodOrBuilder(Error error);
 
-        return (TResponse)typeof(TResponse)
-            .GetMethod("From", [typeof(List<Error>)])!
-            .Invoke(null, [errors])!;
+    private static MethodOrBuilder CreateFactory()
+    {
+        var method = typeof(TResponse)
+            .GetMethod("From", BindingFlags.Public | BindingFlags.Static, [typeof(Error)])
+            ?? throw new InvalidOperationException($"Type {typeof(TResponse).Name} must implement static From(Error).");
+
+        return (Error error) => (TResponse)method.Invoke(null, [error])!;
     }
 }

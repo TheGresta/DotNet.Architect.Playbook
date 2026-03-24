@@ -1,4 +1,6 @@
-﻿using ErrorOr;
+﻿using System.Reflection;
+
+using ErrorOr;
 
 using FluentValidation;
 
@@ -6,28 +8,29 @@ using MediatR;
 
 namespace Playbook.Architecture.CQRS.Application.Common.Behaviors;
 
-public class ValidationBehavior<TRequest, TResponse>(
+public sealed class ValidationBehavior<TRequest, TResponse>(
     IEnumerable<IValidator<TRequest>>? validators = null)
     : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : IRequest<TResponse>
+    where TRequest : notnull
     where TResponse : IErrorOr
 {
+    private static readonly Func<List<Error>, TResponse> _errorFactory = CreateFactory();
+
     public async Task<TResponse> Handle(
         TRequest request,
         RequestHandlerDelegate<TResponse> next,
-        CancellationToken ct)
+        CancellationToken cancellationToken)
     {
-        // 1. Guard against null or empty validator lists quickly
         if (validators is null || !validators.Any())
         {
-            return await next(ct);
+            return await next(cancellationToken);
         }
 
-        // 2. Run all validators in parallel
-        var validationResults = await Task.WhenAll(
-            validators.Select(v => v.ValidateAsync(request, ct)));
+        var context = new ValidationContext<TRequest>(request);
 
-        // 3. Extract errors efficiently
+        var validationResults = await Task.WhenAll(
+            validators.Select(v => v.ValidateAsync(context, cancellationToken)));
+
         var errors = validationResults
             .SelectMany(r => r.Errors)
             .Where(f => f is not null)
@@ -36,17 +39,17 @@ public class ValidationBehavior<TRequest, TResponse>(
 
         if (errors.Count == 0)
         {
-            return await next(ct);
+            return await next(cancellationToken);
         }
 
-        // We use the ErrorOr factory to create the response type safely.
-        return CreateValidationResult(errors);
+        return _errorFactory(errors);
     }
 
-    private static TResponse CreateValidationResult(List<Error> errors) =>
-        // ErrorOr provides a static method 'From' to create the result from a list of errors.
-        // This is much faster and safer than using the 'dynamic' keyword.
-        (TResponse)typeof(TResponse)
-            .GetMethod("From", [typeof(List<Error>)])!
-            .Invoke(null, [errors])!;
+    private static Func<List<Error>, TResponse> CreateFactory()
+    {
+        var method = typeof(TResponse).GetMethod("From", BindingFlags.Public | BindingFlags.Static, [typeof(List<Error>)])
+            ?? throw new InvalidOperationException($"{typeof(TResponse).Name} must implement static From(List<Error>).");
+
+        return (List<Error> errors) => (TResponse)method.Invoke(null, [errors])!;
+    }
 }

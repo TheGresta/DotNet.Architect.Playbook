@@ -16,7 +16,6 @@
 
   <ItemGroup>
     <Folder Include="Application\Features\Products\Constants\" />
-    <Folder Include="Middlewares\" />
   </ItemGroup>
 
 </Project>

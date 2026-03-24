@@ -1,6 +1,4 @@
-﻿using ErrorOr;
-
-using FluentValidation;
+﻿using FluentValidation;
 
 using Playbook.Architecture.CQRS.Domain.ValueObjects;
 
@@ -8,7 +6,11 @@ namespace Playbook.Architecture.CQRS.Application.Common.Extensions;
 
 public static class ValidationExtensions
 {
-    public static IRuleBuilderOptionsConditions<T, decimal> IsValidPrice<T>(this IRuleBuilder<T, decimal> ruleBuilder)
+    /// <summary>
+    /// Validates a decimal value using the Price Value Object logic.
+    /// </summary>
+    public static IRuleBuilderOptionsConditions<T, decimal> IsValidPrice<T>(
+        this IRuleBuilder<T, decimal> ruleBuilder)
     {
         return ruleBuilder.Custom((value, context) =>
         {
@@ -18,18 +20,21 @@ public static class ValidationExtensions
             {
                 foreach (var error in result.Errors)
                 {
-                    // Senior Tip: PropertyPath ensures the error aligns with the JSON key
-                    context.AddFailure(context.PropertyPath, error.Description);
+                    context.AddFailure(error.Description);
                 }
             }
         });
     }
 
-    public static IRuleBuilderOptionsConditions<T, string> IsValidSku<T>(this IRuleBuilder<T, string> ruleBuilder)
+    /// <summary>
+    /// Validates a string value using the SKU Value Object logic.
+    /// </summary>
+    public static IRuleBuilderOptionsConditions<T, string> IsValidSku<T>(
+        this IRuleBuilder<T, string> ruleBuilder)
     {
         return ruleBuilder.Custom((value, context) =>
         {
-            // We can handle null/empty checks here or let the VO handle it
+            // Early exit for optional fields to avoid redundant VO logic
             if (string.IsNullOrWhiteSpace(value)) return;
 
             var result = Sku.Create(value);
@@ -38,7 +43,7 @@ public static class ValidationExtensions
             {
                 foreach (var error in result.Errors)
                 {
-                    context.AddFailure(context.PropertyPath, error.Description);
+                    context.AddFailure(error.Description);
                 }
             }
         });

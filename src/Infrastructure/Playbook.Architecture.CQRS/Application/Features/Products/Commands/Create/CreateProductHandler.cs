@@ -37,5 +37,5 @@ public class CreateProductHandler(IProductRepository repository)
     }
 
     private ProductResponse ToResponse(Product product) =>
-    new(product.Id, product.Name, product.Price, product.Sku);
+        new(product.Id, product.Name, product.Price, product.Sku);
 }

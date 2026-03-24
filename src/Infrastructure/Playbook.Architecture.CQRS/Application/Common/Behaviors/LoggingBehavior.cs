@@ -6,7 +6,7 @@ using MediatR;
 
 namespace Playbook.Architecture.CQRS.Application.Common.Behaviors;
 
-public class LoggingBehavior<TRequest, TResponse>(ILogger<TRequest> logger)
+public sealed class LoggingBehavior<TRequest, TResponse>(ILogger<TRequest> logger)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>
     where TResponse : IErrorOr
@@ -14,23 +14,33 @@ public class LoggingBehavior<TRequest, TResponse>(ILogger<TRequest> logger)
     public async Task<TResponse> Handle(
         TRequest request,
         RequestHandlerDelegate<TResponse> next,
-        CancellationToken ct)
+        CancellationToken cancellationToken)
     {
-        logger.LogInformation("Starting request {RequestName}", typeof(TRequest).Name);
-        var timer = Stopwatch.StartNew();
+        string requestName = typeof(TRequest).Name;
 
-        var response = await next(ct);
+        logger.LogInformation("Processing request {RequestName}", requestName);
 
-        timer.Stop();
+        long startTimestamp = Stopwatch.GetTimestamp();
+
+        var response = await next(cancellationToken);
+
+        TimeSpan elapsed = Stopwatch.GetElapsedTime(startTimestamp);
+
         if (response.IsError)
         {
-            logger.LogWarning("Request {RequestName} failed in {Elapsed}ms with {ErrorCount} errors",
-                typeof(TRequest).Name, timer.ElapsedMilliseconds, response.Errors?.Count);
+            logger.LogWarning(
+                "Request {RequestName} failed in {Elapsed:0.000}ms with {ErrorCount} errors. Errors: {ErrorCodes}",
+                requestName,
+                elapsed.TotalMilliseconds,
+                response.Errors?.Count ?? 0,
+                string.Join(", ", response.Errors?.Select(e => e.Code) ?? []));
         }
         else
         {
-            logger.LogInformation("Request {RequestName} completed in {Elapsed}ms",
-                typeof(TRequest).Name, timer.ElapsedMilliseconds);
+            logger.LogInformation(
+                "Request {RequestName} succeeded in {Elapsed:0.000}ms",
+                requestName,
+                elapsed.TotalMilliseconds);
         }
 
         return response;

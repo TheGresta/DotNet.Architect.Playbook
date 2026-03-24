@@ -2,8 +2,8 @@
 
 using Playbook.Architecture.CQRS.Application.Common.Behaviors;
 using Playbook.Architecture.CQRS.Application.Common.Interfaces;
-using Playbook.Architecture.CQRS.Infrastructure.Errors;
 using Playbook.Architecture.CQRS.Infrastructure.Persistence;
+using Playbook.Architecture.CQRS.Middlewares;
 
 namespace Playbook.Architecture.CQRS;
 
