@@ -54,7 +54,7 @@ graph TD
 ### 📂 Key Artifacts
 * `QueryCachingBehavior.cs`: The performance anchor. Orchestrates the "Cache-Aside" pattern with a granular locking strategy using a `ConcurrentDictionary` of semaphores.
 * `ValidationBehavior.cs`: The gatekeeper. Asynchronously executes all `FluentValidation` rules and short-circuits the pipeline if invariants are violated.
-* `ExceptionHandlingBehavior.cs`: The safety net. Converts unhandled exceptions into standardized RFC 7807 Problem Details via a static `From(Error)` factory pattern.
+* `ExceptionHandlingBehavior.cs`: The safety net. Converts unhandled exceptions into standardized RFC 7807 Problem Details via ErrorOr's implicit conversion operator.
 * `CacheInvalidationBehavior.cs`: The consistency worker. Purges related cache keys (e.g., `product-123`) only after successful state-changing commands.
 * `ErrorOrExtensions.cs`: Functional utility suite. Provides `MapAsync` and `EnsureFound` to allow handlers to be written as elegant, readable pipelines.
 

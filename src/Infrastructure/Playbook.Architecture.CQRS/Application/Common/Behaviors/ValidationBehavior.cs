@@ -23,6 +23,11 @@ public sealed class ValidationBehavior<TRequest, TResponse>(
     where TResponse : IErrorOr
 {
     /// <summary>
+    /// A cached delegate used to instantiate the error response.
+    /// </summary>
+    private static readonly Func<List<Error>, TResponse> _errorFactory = CreateFactory();
+
+    /// <summary>
     /// Intercepts the request to perform validation before proceeding to the next behavior or handler.
     /// </summary>
     /// <param name="request">The request instance to be validated.</param>
@@ -52,21 +57,20 @@ public sealed class ValidationBehavior<TRequest, TResponse>(
                     .Select(f => Error.Validation(f.PropertyName, f.ErrorMessage)));
         }
 
-            // Execute all registered valida
         if (errors.Count == 0)
         {
             return await next(cancellationToken);
         }
 
-        return (TResponse)(object)errors;
+        return _errorFactory(errors);
     }
 
     /// <summary>
-    /// Uses Reflection to locate the 'From' static factory method on the response type that accepts a list of errors.
+    /// Uses Reflection to locate the implicit conversion operator on the response type that accepts a list of errors.
     /// This allows the behavior to remain generic while still producing strongly-typed <see cref="IErrorOr"/> responses.
     /// </summary>
-    /// <returns>A compiled function that creates a <typeparamref name="TResponse"/> from a list of <see cref="Error"/>.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if the response type does not adhere to the expected factory pattern.</exception>
+    /// <returns>A compiled function that creates a <typeparamref name="TResponse"/> from a list of <see cref="Error"/> via implicit conversion.</returns>
+    /// <exception cref="InvalidOperationException">Thrown if the response type does not have an implicit conversion from <see cref="List{Error}"/>.</exception>
     private static Func<List<Error>, TResponse> CreateFactory()
     {
         var method = typeof(TResponse)

@@ -61,14 +61,14 @@ public sealed class ExceptionHandlingBehavior<TRequest, TResponse>(
     private delegate TResponse MethodOrBuilder(Error error);
 
     /// <summary>
-    /// Uses Reflection to locate and bind to the 'From' static factory method on the response type.
+    /// Uses Reflection to locate and bind to the implicit conversion operator on the response type.
     /// This is executed once per generic instantiation to optimize performance.
     /// </summary>
     /// <returns>A compiled delegate for rapid instantiation of error responses.</returns>
-    /// <exception cref="InvalidOperationException">Thrown if the <typeparamref name="TResponse"/> does not adhere to the required 'From' method signature.</exception>
+    /// <exception cref="InvalidOperationException">Thrown if the <typeparamref name="TResponse"/> does not have an implicit conversion from <see cref="Error"/>.</exception>
     private static MethodOrBuilder CreateFactory()
     {
-        // Locates the static 'From' method typically found in ErrorOr implementations.
+        // Locates the implicit conversion operator (compiled as op_Implicit) on ErrorOr<T>.
         var method = typeof(TResponse)
             .GetMethod("op_Implicit", BindingFlags.Public | BindingFlags.Static, [typeof(Error)])
             ?? throw new InvalidOperationException(
