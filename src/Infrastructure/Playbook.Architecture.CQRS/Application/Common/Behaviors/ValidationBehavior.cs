@@ -23,12 +23,6 @@ public sealed class ValidationBehavior<TRequest, TResponse>(
     where TResponse : IErrorOr
 {
     /// <summary>
-    /// A cached delegate for the static factory method of <typeparamref name="TResponse"/>.
-    /// This optimizes performance by preventing repeated reflection lookups for error object instantiation.
-    /// </summary>
-    private static readonly Func<List<Error>, TResponse> _errorFactory = CreateFactory();
-
-    /// <summary>
     /// Intercepts the request to perform validation before proceeding to the next behavior or handler.
     /// </summary>
     /// <param name="request">The request instance to be validated.</param>
@@ -48,24 +42,23 @@ public sealed class ValidationBehavior<TRequest, TResponse>(
 
         var context = new ValidationContext<TRequest>(request);
 
-        // Execute all registered validators in parallel to minimize latency, especially when dealing with complex or external rules.
-        var validationResults = await Task.WhenAll(
-            validators.Select(v => v.ValidateAsync(context, cancellationToken)));
+        var errors = new List<Error>();
+        foreach (var validator in validators)
+        {
+            var result = await validator.ValidateAsync(context, cancellationToken);
+            errors.AddRange(
+                result.Errors
+                    .Where(f => f is not null)
+                    .Select(f => Error.Validation(f.PropertyName, f.ErrorMessage)));
+        }
 
-        // Flatten the results from multiple validators into a single list of domain-specific Error objects.
-        var errors = validationResults
-            .SelectMany(r => r.Errors)
-            .Where(f => f is not null)
-            .Select(f => Error.Validation(f.PropertyName, f.ErrorMessage))
-            .ToList();
-
+            // Execute all registered valida
         if (errors.Count == 0)
         {
             return await next(cancellationToken);
         }
 
-        // Short-circuit: Return the error collection without invoking the actual request handler.
-        return _errorFactory(errors);
+        return (TResponse)(object)errors;
     }
 
     /// <summary>
@@ -76,8 +69,11 @@ public sealed class ValidationBehavior<TRequest, TResponse>(
     /// <exception cref="InvalidOperationException">Thrown if the response type does not adhere to the expected factory pattern.</exception>
     private static Func<List<Error>, TResponse> CreateFactory()
     {
-        var method = typeof(TResponse).GetMethod("From", BindingFlags.Public | BindingFlags.Static, [typeof(List<Error>)])
-            ?? throw new InvalidOperationException($"{typeof(TResponse).Name} must implement static From(List<Error>).");
+        var method = typeof(TResponse)
+            .GetMethod("op_Implicit", BindingFlags.Public | BindingFlags.Static, [typeof(List<Error>)])
+            ?? throw new InvalidOperationException(
+                $"Type {typeof(TResponse).Name} must have an implicit conversion operator from List<Error>. " +
+                "Ensure TResponse is ErrorOr<T>.");
 
         return (List<Error> errors) => (TResponse)method.Invoke(null, [errors])!;
     }

@@ -2,6 +2,6 @@
 
 public abstract class Entity(Guid id)
 {
-    public Guid Id { get; init; } = id;
-    public DateTime CreatedAtUtc { get; init; } = DateTime.UtcNow;
+    public Guid Id { get; } = id;
+    public DateTime CreatedAtUtc { get; } = DateTime.UtcNow;
 }

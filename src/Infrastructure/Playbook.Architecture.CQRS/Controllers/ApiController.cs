@@ -35,7 +35,7 @@ public abstract class ApiController(ISender mediator) : ControllerBase
     protected async Task<IActionResult> SendAndMatch<TResponse>(
         IRequest<ErrorOr<TResponse>> request)
     {
-        var result = await Mediator.Send(request);
+        var result = await Mediator.Send(request, HttpContext.RequestAborted);
         // Uses the ErrorOr Match method to functionally branch between success and error paths.
         return result.Match(value => Ok(value), Problem);
     }
@@ -52,7 +52,7 @@ public abstract class ApiController(ISender mediator) : ControllerBase
     IRequest<ErrorOr<TResponse>> request,
     string actionName) where TResponse : IHasId
     {
-        var result = await Mediator.Send(request);
+        var result = await Mediator.Send(request, HttpContext.RequestAborted);
 
         return result.Match(
             // On success, returns 201 Created with the resource URI and the object body.

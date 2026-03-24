@@ -13,7 +13,7 @@ Content-Type: application/json
   "sku": "KBD-001-RGB"
 }
 
-### 3. Create Product with Invalid Price (Validation Test)
+### 2. Create Product with Invalid Price (Validation Test)
 POST {{Host}}/api/products
 Content-Type: application/json
 
@@ -23,6 +23,6 @@ Content-Type: application/json
   "sku": "MSE-002"
 }
 
-### 4. Get Non-Existent Product (NotFound Test)
+### 3. Get Non-Existent Product (NotFound Test)
 GET {{Host}}/api/products/3134c4dc-1974-47ac-85b3-f4e6203adcaa
 Accept: application/json

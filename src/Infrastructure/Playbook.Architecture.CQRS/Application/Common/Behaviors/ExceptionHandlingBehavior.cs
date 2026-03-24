@@ -70,8 +70,10 @@ public sealed class ExceptionHandlingBehavior<TRequest, TResponse>(
     {
         // Locates the static 'From' method typically found in ErrorOr implementations.
         var method = typeof(TResponse)
-            .GetMethod("From", BindingFlags.Public | BindingFlags.Static, [typeof(Error)])
-            ?? throw new InvalidOperationException($"Type {typeof(TResponse).Name} must implement static From(Error).");
+            .GetMethod("op_Implicit", BindingFlags.Public | BindingFlags.Static, [typeof(Error)])
+            ?? throw new InvalidOperationException(
+                $"Type {typeof(TResponse).Name} must have an implicit conversion operator from Error. " +
+                "Ensure TResponse is ErrorOr<T>.");
 
         return (Error error) => (TResponse)method.Invoke(null, [error])!;
     }

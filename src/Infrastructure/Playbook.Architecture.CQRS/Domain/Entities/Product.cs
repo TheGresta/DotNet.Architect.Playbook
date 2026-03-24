@@ -12,6 +12,9 @@ public class Product(Guid id, string name, Price price, Sku sku) : Entity(id)
 
     public ErrorOr<Updated> Update(string name, decimal priceValue)
     {
+        if (string.IsNullOrEmpty(name))
+            return Error.Validation("Product.InvalidName", "Product name is required.");
+
         // We attempt to create a new Price Value Object
         var priceResult = Price.Create(priceValue);
 

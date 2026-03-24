@@ -25,7 +25,6 @@ public class CreateProductValidator : AbstractValidator<CreateProductCommand>
 
         RuleFor(x => x.Sku)
             .NotEmpty()
-            .IsValidSku()
-            .When(x => x.Sku != null);
+            .IsValidSku();
     }
 }

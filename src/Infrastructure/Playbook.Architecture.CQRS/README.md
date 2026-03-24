@@ -71,7 +71,7 @@ graph TD
 3. **Execute (Read):** Call `GET /api/products/{id}`.
     * **Observe**: First call logs "Cache Miss." The second call logs "Cache Hit" and returns in < `1ms` without hitting the repository.
 4. **Observe Logs:**
-    * ```
+    * ```log
         INFO: Processing request CreateProductCommand
         INFO: Successfully invalidated: product-abc-123
         INFO: Request CreateProductCommand succeeded in 12.450ms
@@ -82,12 +82,12 @@ graph TD
 *Every architectural choice is a compromise.*
 
 * ✅ **Strengths:** 
-    * **Total Decoupling**: Handlers focus 100% on business logic; infrastructure is entirely "invisible.
+    * **Total Decoupling**: Handlers focus 100% on business logic; infrastructure is entirely "invisible".
     * **Observability**: Integrated high-resolution timing and error-code logging in every request.
     * **Scalability**: Distributed caching and parallel validation execution maximize throughput.
 * ❌ **Weaknesses:**
     * **Pipeline Complexity**: Debugging the "stack trace" of behaviors can be daunting for junior developers.
     * **Memory Overhead**: The `_lockGroups` dictionary in the caching behavior requires periodic pruning in systems with millions of unique keys.
 * 🔄 **Alternatives:** 
-    * **Decorator Pattern**: Offers similar benefits but requires manual registration per handler, whereas Open Behaviors are "automatic.
+    * **Decorator Pattern**: Offers similar benefits but requires manual registration per handler, whereas Open Behaviors are "automatic".
     * **Action Filters**: Useful for Web APIs, but MediatR behaviors work across any entry point (CLI, Background Jobs, gRPC).
