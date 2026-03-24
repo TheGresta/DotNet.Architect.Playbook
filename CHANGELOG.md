@@ -1,3 +1,20 @@
+# [1.6.0](https://github.com/TheGresta/DotNet.Architect.Playbook/compare/v1.5.0...v1.6.0) (2026-03-24)
+
+
+### Bug Fixes
+
+* **cqrs:** [Issue [#26](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/26)] ai suggestion fixes ([2eabe9b](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/2eabe9b8f4a1c971d1e3c3c1a96b58946908cd06))
+* **cqrs:** [Issue [#26](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/26)] ai suggestion fixes 2 ([9817bfd](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/9817bfd2cf973b2c7a3d2bfedbb1027e790f7079))
+
+
+### Features
+
+* **cqrs:** [Issue [#26](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/26)] behaviours and command queries ([082442a](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/082442ad0aa7483f53c4a66094c198560de50dc7))
+* **cqrs:** [Issue [#26](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/26)] code summaries ([719e237](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/719e2370b460508853a0cdcb4f1676f36c05a2e9))
+* **cqrs:** [Issue [#26](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/26)] global cqrs complition ([84d9951](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/84d99515dd57e83c2dca6a3b9751d32e5b42e588))
+* **cqrs:** [Issue [#26](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/26)] optimisation and refactoring ([ba10810](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/ba10810566e720f2bce7117ed9df91b6aa350100))
+* **exeptionHandling:** [Issue [#26](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/26)] initial cqrs pattern initial ([ac874c3](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/ac874c384b73b2d7fb2ccd94091afd77557f375c))
+
 # [1.5.0](https://github.com/TheGresta/DotNet.Architect.Playbook/compare/v1.4.0...v1.5.0) (2026-03-07)
 
 
