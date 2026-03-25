@@ -46,9 +46,9 @@ internal sealed class PersistentConnection(
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
-        if (!IsConnected)
+        if (!IsConnected && !await TryConnectAsync(ct).ConfigureAwait(false))
         {
-            await TryConnectAsync(ct).ConfigureAwait(false);
+            throw new InvalidOperationException("Failed to establish RabbitMQ connection.");
         }
 
         // Asynchronously wait for an available slot in the channel pool to prevent resource exhaustion
@@ -124,8 +124,8 @@ internal sealed class PersistentConnection(
         }
         catch (Exception ex)
         {
-            logger.LogCritical(ex, "Fatal error connecting to RabbitMQ node.");
-            return false;
+            logger.LogError(ex, "Failed to connect to RabbitMQ node.");
+            throw;
         }
         finally
         {

@@ -1,4 +1,6 @@
-﻿using Playbook.Messaging.RabbitMQ.Messaging.Abstractions;
+﻿using Microsoft.Extensions.DependencyInjection.Extensions;
+
+using Playbook.Messaging.RabbitMQ.Messaging.Abstractions;
 using Playbook.Messaging.RabbitMQ.Messaging.Internal;
 
 namespace Playbook.Messaging.RabbitMQ.Messaging.Configuration;
@@ -35,7 +37,7 @@ public sealed class ConsumerRegistrationBuilder<T>(
     {
         // Register the handler in the DI container. 
         // Scoped lifetime ensures that each message has its own instance of the handler and its dependencies.
-        services.AddScoped<THandler>();
+        services.TryAddScoped<THandler>();
 
         // Update the internal registry so the dispatcher knows which types to resolve when a message arrives.
         registry.RegisterHandler<T, THandler>();

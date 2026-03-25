@@ -14,7 +14,7 @@ namespace Playbook.Messaging.RabbitMQ.Messaging.Internal;
 /// </remarks>
 public sealed class ConsumerRegistry
 {
-    private readonly ConcurrentDictionary<Type, ConcurrentBag<Type>> _handlerMappings = [];
+    private readonly ConcurrentDictionary<Type, ConcurrentDictionary<Type, byte>> _handlerMappings = [];
 
     /// <summary>
     /// Registers an association between a message type <typeparamref name="T"/> and a specific handler implementation <typeparamref name="THandler"/>.
@@ -26,8 +26,8 @@ public sealed class ConsumerRegistry
         where THandler : IIntegrationEventHandler<T>
     {
         // Atomically retrieve or create the collection of handlers for the specific message type
-        var handlers = _handlerMappings.GetOrAdd(typeof(T), _ => []);
-        handlers.Add(typeof(THandler));
+        var handlers = _handlerMappings.GetOrAdd(typeof(T), _ => new ConcurrentDictionary<Type, byte>());
+        handlers.TryAdd(typeof(THandler), 0); // Idempotent: ignores duplicates
     }
 
     /// <summary>
@@ -36,5 +36,5 @@ public sealed class ConsumerRegistry
     /// <param name="messageType">The <see cref="Type"/> of the message to look up.</param>
     /// <returns>An <see cref="IEnumerable{Type}"/> containing the types of all registered handlers; returns an empty collection if none are found.</returns>
     public IEnumerable<Type> GetHandlersForType(Type messageType) =>
-        _handlerMappings.TryGetValue(messageType, out var handlers) ? handlers : [];
+        _handlerMappings.TryGetValue(messageType, out var handlers) ? handlers.Keys : [];
 }

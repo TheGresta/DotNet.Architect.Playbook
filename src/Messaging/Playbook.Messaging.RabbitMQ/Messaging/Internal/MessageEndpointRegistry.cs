@@ -38,5 +38,5 @@ public sealed class MessageEndpointRegistry
     /// sensible convention-based defaults even if explicit configuration is omitted.
     /// </remarks>
     public MessageEndpointDefinition GetDefinition<T>() =>
-        _definitions.GetValueOrDefault(typeof(T)) ?? new MessageEndpointDefinition { ExchangeName = typeof(T).Name };
+        _definitions.GetValueOrDefault(typeof(T)) ?? new MessageEndpointDefinition { ExchangeName = typeof(T).FullName?.Replace('.', '_') ?? typeof(T).Name };
 }

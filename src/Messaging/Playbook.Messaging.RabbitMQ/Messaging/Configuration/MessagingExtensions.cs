@@ -50,7 +50,7 @@ public static class MessagingExtensions
 
         // 5. RabbitMQ Client Factory Setup (v7+ Optimized):
         // Configures the low-level connection factory with high-availability parameters.
-        services.AddSingleton<IConnectionFactory>(sp =>
+        services.TryAddSingleton<IConnectionFactory>(sp =>
         {
             // Resolve the latest options from the service provider
             var opt = sp.GetRequiredService<RabbitOptions>();

@@ -83,7 +83,7 @@ graph TD
 
 * ✅ **Strengths:** 
     * **Resource Efficiency**: Channel pooling prevents broker-side resource exhaustion.
-    * **Strict Concurrency Contro**: `MaxConcurrency` and `PrefetchCount` allow fine-grained tuning of system load.
+    * **Strict Concurrency Control**: `MaxConcurrency` and `PrefetchCount` allow fine-grained tuning of system load.
     * **Developer Experience**: "Just-in-time" topology means developers don't need to manually create exchanges/queues in the RabbitMQ UI.
 * ❌ **Weaknesses:**
     * **Sequential Batching**: `PublishBatchAsync` currently publishes messages sequentially over a single channel; for extreme throughput, multiple channels could be used.

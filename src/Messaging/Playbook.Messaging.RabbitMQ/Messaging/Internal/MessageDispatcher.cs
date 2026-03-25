@@ -57,7 +57,7 @@ internal sealed class MessageDispatcher(
         {
             var handler = (IIntegrationEventHandler<T>)scope.ServiceProvider.GetRequiredService(handlerType);
             return handler.HandleAsync(message, ct);
-        });
+        }).ToList(); // Materialize to catch resolution failures immediately
 
         try
         {
@@ -68,8 +68,7 @@ internal sealed class MessageDispatcher(
         {
             logger.LogError(ex, "One or more handlers failed for message {Type}", typeof(T).Name);
 
-            // Re-throw so the upstream Consumer Engine can appropriately Nack or DLX the original message
-            throw;
+            throw new InvalidOperationException($"Failed to deserialize message of type {typeof(T).Name}. Message will be routed to DLX.");
         }
     }
 }
