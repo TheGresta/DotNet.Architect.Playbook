@@ -62,6 +62,13 @@ Below is the comprehensive directory of architectural chapters. Each module is a
 | ✅ | **CQRS Pattern** | MediatR | [📖 Readme](./src/Infrastructure/Playbook.Architecture.CQRS/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Acqrs) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Acqrs) |
 | ✅ | **Exception Handling** | Custom Exception Framework | [📖 Readme](./src/Infrastructure/Playbook.Exceptions/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3AexceptionHandling) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3AexceptionHandling) |
 
+### 🌐 API Design & Gateway Patterns
+*Advanced protocols for data exposure, client-driven fetching, and API orchestration.*
+
+| Status | Chapter Name | Technology Focus | Documentation | Tracking |
+| :---: | :--- | :--- | :--- | :--- |
+| 📅 | **Federated Graphs** | GraphQL & Hot Chocolate | [📖 Readme](./src/API/Playbook.API.GraphQL/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Agraphql) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Agraphql) |
+
 ### 🤖 AI & Semantic Engineering
 *Integrating LLMs and Vector Search into .NET applications.*
 
