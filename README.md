@@ -49,7 +49,7 @@ Below is the comprehensive directory of architectural chapters. Each module is a
 
 | Status | Chapter Name | Technology Focus | Documentation | Tracking |
 | :---: | :--- | :--- | :--- | :--- |
-| 📅 | **Message Broker** | RabbitMQ | [📖 Readme](./src/Messaging/Playbook.Messaging.RabbitMQ/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Arabbitmq) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Arabbitmq) |
+| ✅ | **Message Broker** | RabbitMQ | [📖 Readme](./src/Messaging/Playbook.Messaging.RabbitMQ/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Arabbitmq) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Arabbitmq) |
 | 📅 | **Service Bus** | MassTransit | [📖 Readme](./src/Messaging/Playbook.Messaging.MassTransit/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Amasstransit) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Amasstransit) |
 | 📅 | **Event Streaming** | Kafka | [📖 Readme](./src/Messaging/Playbook.Messaging.Kafka/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Akafka) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Akafka) |
 | ✅ | **Real-Time Pushing** | SignalR & Redis Backplane | [📖 Readme](./src/Messaging/Playbook.Messaging.SignalR/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Asignalr) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Asignalr) |
