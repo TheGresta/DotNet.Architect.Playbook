@@ -1,3 +1,15 @@
+# [1.7.0](https://github.com/TheGresta/DotNet.Architect.Playbook/compare/v1.6.0...v1.7.0) (2026-03-25)
+
+
+### Bug Fixes
+
+* **signalr:** [Issue [#33](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/33)] ai suggestions ([c5c6813](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/c5c681323fbe9f63ec0dfa6f0d626727a29842b9))
+
+
+### Features
+
+* **signalr:** [Issue [#33](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/33)] initial signalr created ([ec78796](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/ec78796def627100796e5a531ab5c36a06629d26))
+
 # [1.6.0](https://github.com/TheGresta/DotNet.Architect.Playbook/compare/v1.5.0...v1.6.0) (2026-03-24)
 
 
