@@ -31,8 +31,10 @@ internal sealed class RabbitProducer<T>(
     {
         var definition = registry.GetDefinition<T>();
 
-        // Acquire a scoped channel lease from the persistent connection pool
-        await using var lease = await connection.AcquireAsync(ct).ConfigureAwait(false);
+        // Acquire the appropriate channel: confirm-capable (non-pooled) or standard (pooled).
+        await using var lease = definition.WaitForConfirm
+            ? await connection.AcquireConfirmChannelAsync(ct).ConfigureAwait(false)
+            : await connection.AcquireAsync(ct).ConfigureAwait(false);
 
         // Ensure infrastructure (Exchanges/Bindings) exists before attempting to publish
         // This is idempotent and optimized via an internal cache in the topology manager
@@ -42,6 +44,9 @@ internal sealed class RabbitProducer<T>(
         var body = JsonSerializer.SerializeToUtf8Bytes(message, MessagingJsonContext.Default.Options);
         var props = CreateProperties(definition);
 
+        // When PublisherConfirmationTrackingEnabled = true (confirm channel), BasicPublishAsync
+        // internally awaits the broker ack before returning — no separate WaitForConfirmsOrDieAsync needed.
+        // mandatory = WaitForConfirm: also enforces routing so unroutable messages trigger a BasicReturn.
         await lease.Channel.BasicPublishAsync(
             exchange: definition.ExchangeName,
             routingKey: definition.RoutingKey ?? string.Empty,
@@ -62,7 +67,9 @@ internal sealed class RabbitProducer<T>(
     {
         var definition = registry.GetDefinition<T>();
 
-        await using var lease = await connection.AcquireAsync(ct).ConfigureAwait(false);
+        await using var lease = definition.WaitForConfirm
+            ? await connection.AcquireConfirmChannelAsync(ct).ConfigureAwait(false)
+            : await connection.AcquireAsync(ct).ConfigureAwait(false);
 
         await topologyManager.EnsureTopologyAsync<T>(lease.Channel, ct).ConfigureAwait(false);
 
@@ -88,10 +95,9 @@ internal sealed class RabbitProducer<T>(
     /// </summary>
     /// <param name="def">The endpoint definition containing configuration metadata.</param>
     /// <returns>A configured <see cref="BasicProperties"/> object.</returns>
-    private static BasicProperties CreateProperties(MessageEndpointDefinition def) => new BasicProperties
+    private static BasicProperties CreateProperties(MessageEndpointDefinition def) => new()
     {
         Persistent = true,
-        // DeliveryMode 2 ensures messages are written to disk to survive a broker restart
         DeliveryMode = DeliveryModes.Persistent,
         Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds())
     };

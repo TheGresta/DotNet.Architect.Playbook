@@ -29,13 +29,18 @@ internal sealed class PersistentConnection(
     private IConnection? _connection;
     private bool _disposed;
 
+    // Tracks the number of ChannelLease instances currently held by callers.
+    // DisposeAsync waits for this to reach zero before disposing semaphores,
+    // preventing ObjectDisposedException from concurrent ReturnChannelAsync calls.
+    private int _activeLeases;
+
     /// <summary>
     /// Gets a value indicating whether the underlying connection is established and active.
     /// </summary>
     public bool IsConnected => _connection is { IsOpen: true } && !_disposed;
 
     /// <summary>
-    /// Acquires a <see cref="IChannel"/> wrapped in a <see cref="ChannelLease"/>. 
+    /// Acquires a pooled channel lease for standard (fire-and-forget) publishing or consuming.
     /// If a valid channel is available in the pool, it is reused; otherwise, a new channel is instantiated.
     /// </summary>
     /// <param name="ct">The <see cref="CancellationToken"/> to monitor for cancellation requests.</param>
@@ -47,9 +52,7 @@ internal sealed class PersistentConnection(
         ObjectDisposedException.ThrowIf(_disposed, this);
 
         if (!IsConnected && !await TryConnectAsync(ct).ConfigureAwait(false))
-        {
             throw new InvalidOperationException("Failed to establish RabbitMQ connection.");
-        }
 
         // Asynchronously wait for an available slot in the channel pool to prevent resource exhaustion
         await _poolLimit.WaitAsync(ct).ConfigureAwait(false);
@@ -68,9 +71,12 @@ internal sealed class PersistentConnection(
                 await DisposeChannelInternalAsync(pooledChannel).ConfigureAwait(false);
             }
 
-            channel ??= await CreateNewChannelAsync(ct).ConfigureAwait(false);
+            channel ??= await CreateNewChannelAsync(options: null, ct).ConfigureAwait(false);
 
-            return new ChannelLease(this, channel);
+            // Register the lease BEFORE handing it to the caller so DisposeAsync
+            // can safely wait for the count to reach zero.
+            Interlocked.Increment(ref _activeLeases);
+            return new ChannelLease(this, channel, returnToPool: true);
         }
         catch (Exception ex)
         {
@@ -81,21 +87,54 @@ internal sealed class PersistentConnection(
     }
 
     /// <summary>
-    /// Returns a channel to the internal pool or disposes of it if the connection is closed or the channel is faulted.
+    /// Acquires a dedicated, non-pooled channel with publisher confirmations enabled.
+    /// The channel is disposed (not returned to the pool) when the lease is released.
+    /// Use this when <see cref="MessageEndpointDefinition.WaitForConfirm"/> is <c>true</c>.
     /// </summary>
-    /// <param name="channel">The <see cref="IChannel"/> to be returned or disposed.</param>
-    /// <returns>A <see cref="ValueTask"/> representing the asynchronous operation.</returns>
+    public async ValueTask<ChannelLease> AcquireConfirmChannelAsync(CancellationToken ct = default)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        if (!IsConnected && !await TryConnectAsync(ct).ConfigureAwait(false))
+            throw new InvalidOperationException("Failed to establish RabbitMQ connection.");
+
+        try
+        {
+            // Publisher-confirm channels must NOT be pooled alongside standard channels.
+            // A fresh channel is created per publish call and disposed after use.
+            var confirmOptions = new CreateChannelOptions(
+                publisherConfirmationsEnabled: true,
+                publisherConfirmationTrackingEnabled: true);
+
+            var channel = await CreateNewChannelAsync(confirmOptions, ct).ConfigureAwait(false);
+            return new ChannelLease(this, channel, returnToPool: false);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to acquire RabbitMQ confirm channel.");
+            throw;
+        }
+    }
+
     private async ValueTask ReturnChannelAsync(IChannel channel)
     {
-        if (_disposed || !channel.IsOpen)
+        try
         {
-            await DisposeChannelInternalAsync(channel).ConfigureAwait(false);
-            _poolLimit.Release();
-            return;
+            if (_disposed || !channel.IsOpen)
+                await DisposeChannelInternalAsync(channel).ConfigureAwait(false);
+            else
+                _channelPool.Enqueue(channel);
         }
+        finally
+        {
+            Interlocked.Decrement(ref _activeLeases);
 
-        _channelPool.Enqueue(channel);
-        _poolLimit.Release();
+            if (!_disposed)
+            {
+                try { _poolLimit.Release(); }
+                catch (ObjectDisposedException) { }
+            }
+        }
     }
 
     /// <summary>
@@ -145,10 +184,12 @@ internal sealed class PersistentConnection(
     /// <summary>
     /// Factory method for creating a new <see cref="IChannel"/> instance.
     /// </summary>
-    private async ValueTask<IChannel> CreateNewChannelAsync(CancellationToken ct)
+    private async ValueTask<IChannel> CreateNewChannelAsync(
+        CreateChannelOptions? options,
+        CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(_connection);
-        return await _connection.CreateChannelAsync(cancellationToken: ct).ConfigureAwait(false);
+        return await _connection.CreateChannelAsync(options, ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -157,9 +198,7 @@ internal sealed class PersistentConnection(
     private async ValueTask CleanupPoolAsync()
     {
         while (_channelPool.TryDequeue(out var oldChannel))
-        {
             await DisposeChannelInternalAsync(oldChannel).ConfigureAwait(false);
-        }
     }
 
     /// <summary>
@@ -184,6 +223,28 @@ internal sealed class PersistentConnection(
         if (_disposed) return;
         _disposed = true;
 
+        // Wait for all outstanding leases to be returned before disposing the semaphore.
+        // This prevents ObjectDisposedException in concurrent ReturnChannelAsync calls.
+        // A 30-second timeout guards against leaked leases (e.g. unhandled exceptions in consumers).
+        const int drainTimeoutMs = 30_000;
+        const int pollIntervalMs = 10;
+        var elapsed = 0;
+
+        while (Volatile.Read(ref _activeLeases) > 0)
+        {
+            if (elapsed >= drainTimeoutMs)
+            {
+                logger.LogWarning(
+                    "PersistentConnection disposed with {Count} outstanding lease(s) still active after {Timeout}ms. " +
+                    "Semaphores will be disposed; callers may observe ObjectDisposedException.",
+                    _activeLeases, drainTimeoutMs);
+                break;
+            }
+
+            await Task.Delay(pollIntervalMs).ConfigureAwait(false);
+            elapsed += pollIntervalMs;
+        }
+
         await CleanupPoolAsync().ConfigureAwait(false);
 
         if (_connection is not null)
@@ -198,12 +259,15 @@ internal sealed class PersistentConnection(
     }
 
     /// <summary>
-    /// A lightweight, disposable wrapper for an <see cref="IChannel"/>. 
-    /// Ensures that the channel is returned to the <see cref="PersistentConnection"/> pool when the lease is disposed.
+    /// A lightweight wrapper for an <see cref="IChannel"/> that either returns the channel
+    /// to the pool or disposes it depending on <paramref name="returnToPool"/>.
     /// </summary>
     /// <param name="connection">The parent persistent connection managing the pool.</param>
     /// <param name="channel">The acquired RabbitMQ channel.</param>
-    public readonly struct ChannelLease(PersistentConnection connection, IChannel channel) : IAsyncDisposable
+    public readonly struct ChannelLease(
+        PersistentConnection connection,
+        IChannel channel,
+        bool returnToPool) : IAsyncDisposable
     {
         /// <summary>
         /// Gets the RabbitMQ channel associated with this lease.
@@ -213,7 +277,12 @@ internal sealed class PersistentConnection(
         /// <summary>
         /// Returns the channel to the pool asynchronously.
         /// </summary>
-        public async ValueTask DisposeAsync() =>
-            await connection.ReturnChannelAsync(Channel).ConfigureAwait(false);
+        public async ValueTask DisposeAsync()
+        {
+            if (returnToPool)
+                await connection.ReturnChannelAsync(Channel).ConfigureAwait(false);
+            else
+                await DisposeChannelInternalAsync(Channel).ConfigureAwait(false);
+        }
     }
 }

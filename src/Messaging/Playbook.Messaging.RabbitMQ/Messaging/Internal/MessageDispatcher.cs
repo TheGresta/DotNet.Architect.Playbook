@@ -68,7 +68,7 @@ internal sealed class MessageDispatcher(
         {
             logger.LogError(ex, "One or more handlers failed for message {Type}", typeof(T).Name);
 
-            throw new InvalidOperationException($"Failed to deserialize message of type {typeof(T).Name}. Message will be routed to DLX.");
+            throw new InvalidOperationException($"\"One or more handlers failed message of type {typeof(T).Name}. Message will be routed to DLX.");
         }
     }
 }

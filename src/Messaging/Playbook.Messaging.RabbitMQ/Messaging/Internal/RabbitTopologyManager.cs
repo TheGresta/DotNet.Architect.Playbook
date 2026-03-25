@@ -47,10 +47,26 @@ internal sealed class RabbitTopologyManager(
                 return;
             }
 
+            var typeName = typeof(T).Name;
+            // Must match the convention in RabbitConsumerEngine<T>: $"{typeof(T).Name}.Queue"
+            var queueName = $"{typeName}.Queue";
+
+            // 1. Declare the primary exchange (no TTL — exchanges do not hold messages).
             await DeclareExchangeAsync(channel, definition, ct).ConfigureAwait(false);
 
-            logger.LogInformation("Topology initialized for {Type} on Exchange: {Exchange}",
-                typeof(T).Name, definition.ExchangeName);
+            // 2. Optionally declare the Dead Letter Exchange before the main queue references it.
+            if (!string.IsNullOrEmpty(definition.DeadLetterExchange))
+                await DeclareDlxExchangeAsync(channel, definition.DeadLetterExchange, ct).ConfigureAwait(false);
+
+            // 3. Declare the consumer queue; TTL and DLX args belong here, not on the exchange.
+            await DeclareQueueAsync(channel, queueName, definition, ct).ConfigureAwait(false);
+
+            // 4. Bind the queue to the exchange so published messages are routed to it.
+            await BindQueueAsync(channel, queueName, definition, ct).ConfigureAwait(false);
+
+            logger.LogInformation(
+                "Topology initialized for {Type}: Exchange={Exchange}, Queue={Queue}",
+                typeName, definition.ExchangeName, queueName);
 
             _initializedTypes.TryAdd(typeof(T), true);
         }
@@ -61,34 +77,118 @@ internal sealed class RabbitTopologyManager(
     }
 
     /// <summary>
-    /// Executes the physical exchange declaration against the broker.
-    /// Configures standard RabbitMQ properties such as durability, auto-deletion, and TTL arguments.
+    /// Declares the primary exchange as durable Fanout.
+    /// Exchanges do not store messages, so TTL must never be set here.
     /// </summary>
-    /// <param name="channel">The channel to perform the declaration on.</param>
-    /// <param name="def">The endpoint definition containing exchange configurations.</param>
-    /// <param name="ct">The cancellation token.</param>
-    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    private static async Task DeclareExchangeAsync(IChannel channel, MessageEndpointDefinition def, CancellationToken ct)
+    /// <remarks>
+    /// Fanout exchanges broadcast every message to all bound queues and ignore routing keys.
+    /// If selective routing is needed in the future, change the exchange type and update
+    /// <see cref="BindQueueAsync"/> and producer routing-key logic accordingly.
+    /// </remarks>
+    private static async Task DeclareExchangeAsync(
+        IChannel channel,
+        MessageEndpointDefinition def,
+        CancellationToken ct)
     {
-        Dictionary<string, object?>? args = null;
-
-        // Map high-level TTL configuration to RabbitMQ's specific x-message-ttl argument.
-        if (def.Ttl.HasValue)
-        {
-            args = new Dictionary<string, object?>
-            {
-                ["x-message-ttl"] = (long)def.Ttl.Value.TotalMilliseconds
-            };
-        }
-
-        // Standardizing on Fanout as per previous Pub/Sub architecture 
-        // since ExchangeType was removed from the definition.
         await channel.ExchangeDeclareAsync(
             exchange: def.ExchangeName,
             type: ExchangeType.Fanout,
             durable: true,
             autoDelete: false,
+            arguments: null,          // ← TTL removed; it has no effect on an exchange
+            cancellationToken: ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Declares the Dead Letter Exchange (DLX) as a durable Direct exchange.
+    /// The DLX must exist before any queue that references it via <c>x-dead-letter-exchange</c>
+    /// is declared; otherwise, the broker will reject the queue declaration.
+    /// </summary>
+    private static async Task DeclareDlxExchangeAsync(
+        IChannel channel,
+        string dlxExchangeName,
+        CancellationToken ct)
+    {
+        await channel.ExchangeDeclareAsync(
+            exchange: dlxExchangeName,
+            type: ExchangeType.Direct,   // Direct allows DLX queues to filter by routing key
+            durable: true,
+            autoDelete: false,
+            arguments: null,
+            cancellationToken: ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Declares the consumer queue with optional TTL and dead-letter arguments.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <c>x-message-ttl</c> controls how long a message may remain in <em>this queue</em>
+    /// before the broker expires it. It must be a queue argument — the same argument on an
+    /// exchange is silently ignored.
+    /// </para>
+    /// <para>
+    /// <c>x-dead-letter-exchange</c> (and the optional <c>x-dead-letter-routing-key</c>)
+    /// tells the broker where to route a message when it is Nack'd with <c>requeue: false</c>
+    /// or expires via TTL.
+    /// </para>
+    /// </remarks>
+    private static async Task DeclareQueueAsync(
+        IChannel channel,
+        string queueName,
+        MessageEndpointDefinition def,
+        CancellationToken ct)
+    {
+        Dictionary<string, object?>? args = null;
+
+        // TTL: messages older than this in the queue will be expired (and dead-lettered if DLX is set).
+        if (def.Ttl.HasValue)
+        {
+            args ??= [];
+            args["x-message-ttl"] = (long)def.Ttl.Value.TotalMilliseconds;
+        }
+
+        // DLX: Nack'd (requeue=false) or TTL-expired messages are routed to this exchange.
+        if (!string.IsNullOrEmpty(def.DeadLetterExchange))
+        {
+            args ??= [];
+            args["x-dead-letter-exchange"] = def.DeadLetterExchange;
+
+            // Optional: override the routing key used when dead-lettering.
+            // Defaults to the message's original routing key when omitted.
+            if (!string.IsNullOrEmpty(def.DeadLetterRoutingKey))
+                args["x-dead-letter-routing-key"] = def.DeadLetterRoutingKey;
+        }
+
+        await channel.QueueDeclareAsync(
+            queue: queueName,
+            durable: true,
+            exclusive: false,
+            autoDelete: false,
             arguments: args,
+            cancellationToken: ct).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Binds the consumer queue to the primary exchange so that messages published
+    /// to the exchange are delivered to the queue.
+    /// </summary>
+    /// <remarks>
+    /// For Fanout exchanges the <paramref name="def"/>.RoutingKey is ignored by the broker,
+    /// but it is forwarded here for documentation purposes and forward-compatibility
+    /// if the exchange type is later changed to Direct or Topic.
+    /// </remarks>
+    private static async Task BindQueueAsync(
+        IChannel channel,
+        string queueName,
+        MessageEndpointDefinition def,
+        CancellationToken ct)
+    {
+        await channel.QueueBindAsync(
+            queue: queueName,
+            exchange: def.ExchangeName,
+            routingKey: def.RoutingKey,   // ignored for Fanout, meaningful for Direct/Topic
+            arguments: null,
             cancellationToken: ct).ConfigureAwait(false);
     }
 }
