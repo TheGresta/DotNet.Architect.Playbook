@@ -1,3 +1,14 @@
+## [1.7.1](https://github.com/TheGresta/DotNet.Architect.Playbook/compare/v1.7.0...v1.7.1) (2026-03-25)
+
+
+### Bug Fixes
+
+* **rabbitmq:** [Issue [#23](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/23)] ai suggestions ([cadfb54](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/cadfb54f61d9237b70068cfefff10cfd00bd8079))
+* **rabbitmq:** [Issue [#23](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/23)] ai suggestions 2 ([6cc500e](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/6cc500e1cfead28b3cabe87afe7e382590c29523))
+* **rabbitmq:** [Issue [#23](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/23)] ai suggestions 3 ([a99b0e1](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/a99b0e1d06c2338bd95709cc6841630756266da1))
+* **rabbitmq:** [Issue [#23](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/23)] ai suggestions 4 ([a2615e4](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/a2615e4df63a9d96c1b5cf3cd6c02a49e68ef06e))
+* **rabbitmq:** [Issue [#23](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/23)] initial rabbitmq system ([4e5e7f8](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/4e5e7f8c2c37f4471e1b04483723f6a8d835d819))
+
 # [1.7.0](https://github.com/TheGresta/DotNet.Architect.Playbook/compare/v1.6.0...v1.7.0) (2026-03-25)
 
 
