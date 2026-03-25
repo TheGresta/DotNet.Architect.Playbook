@@ -12,7 +12,7 @@ namespace Playbook.Messaging.SignalR.Terminal;
 /// This client demonstrates the "Virtual User" pattern, spawning multiple concurrent <see cref="HubConnection"/> 
 /// instances to stress-test group subscriptions and message delivery across different stock portfolios.
 /// </remarks>
-public sealed class ManualTestClient : BackgroundService
+public sealed class ManualTestClient(IHostApplicationLifetime lifetime) : BackgroundService
 {
     private const string _hubUrl = "http://localhost:5190/stockHub";
 
@@ -21,14 +21,17 @@ public sealed class ManualTestClient : BackgroundService
     /// </summary>
     /// <param name="stoppingToken">Triggered when the host is shutting down.</param>
     /// <returns>A <see cref="Task"/> that completes when all simulated traders have finished execution.</returns>
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        // Wait for the application to be fully started before connecting
+        await Task.Run(lifetime.ApplicationStarted.WaitHandle.WaitOne, stoppingToken);
+
         // Offloading to the ThreadPool immediately to ensure the host startup sequence isn't blocked 
         // by the synchronous overhead of initializing multiple SignalR connections.
         var traderA = StartTraderAsync("ALICE", ["BTC", "ETH", "TSLA"], ConsoleColor.Cyan, stoppingToken);
         var traderB = StartTraderAsync("BOB", ["AAPL", "MSFT", "ETH"], ConsoleColor.Magenta, stoppingToken);
 
-        return Task.WhenAll(traderA, traderB);
+        await Task.WhenAll(traderA, traderB);
     }
 
     /// <summary>
@@ -44,7 +47,7 @@ public sealed class ManualTestClient : BackgroundService
         await using var connection = new HubConnectionBuilder()
             .WithUrl(_hubUrl)
             // Strategy: MessagePack is recommended for high-frequency binary serialization to reduce payload size.
-            // .AddMessagePackProtocol() 
+            .AddMessagePackProtocol()
             .WithAutomaticReconnect()
             .Build();
 
@@ -80,9 +83,17 @@ public sealed class ManualTestClient : BackgroundService
         {
             // High-visibility error reporting for infrastructure-level failures.
             Console.Error.WriteLine($"[{name}] Fatal: {ex.Message}");
+            return; // Exit early - no point maintaining a failed connection
         }
 
         // Maintain the connection until the host signals a shutdown.
-        await Task.Delay(Timeout.Infinite, ct);
+        try
+        {
+            await Task.Delay(Timeout.Infinite, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected during shutdown
+        }
     }
 }

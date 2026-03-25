@@ -44,7 +44,7 @@ graph TD
 |------------|------------|---------|
 | Protocol | MessagePack (LZ4) | Drastically reduces payload size and serialization overhead compared to JSON, critical for 10Hz updates. |
 | Transport | SignalR Groups | Efficiently segments traffic by ticker symbol, ensuring clients only receive data for their active portfolio. |
-| Resilience | Stateful Reconnect | Utilizes .NET 8+ features to buffer missed messages (128KB) during transient network drops, maintaining stream integrity. |
+| Resilience | Stateful Reconnect | Utilizes .NET 10+ features to buffer missed messages (128KB) during transient network drops, maintaining stream integrity. |
 | Diagnostics | Source-Generated Logging | Minimizes allocation and CPU cycles in high-traffic paths by using pre-compiled logging delegates. |
 | Concurrency | PeriodicTimer | Replaces older threading timers to provide a "safe" async execution loop that avoids re-entrancy during simulations. |
 

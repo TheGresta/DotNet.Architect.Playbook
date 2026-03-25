@@ -51,10 +51,22 @@ public sealed class MarketDataSimulator(IHubContext<StockTickerHub, IStockClient
 
                     // Fire-and-collect pattern: Dispatching all SignalR group calls concurrently 
                     // before awaiting the aggregate result to maximize throughput.
-                    tasks[i] = hubContext.Clients.Group(symbol).ReceivePriceUpdate(price);
+                    tasks[i] = BroadcastSafeAsync(symbol, price);
                 }
 
                 await Task.WhenAll(tasks);
+
+                async Task BroadcastSafeAsync(string symbol, StockPrice price)
+                {
+                    try
+                    {
+                        await hubContext.Clients.Group(symbol).ReceivePriceUpdate(price);
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        // Log and continue - one failed group shouldn't affect others
+                    }
+                }
             }
         }
         catch (OperationCanceledException)
@@ -70,7 +82,7 @@ public sealed class MarketDataSimulator(IHubContext<StockTickerHub, IStockClient
     /// <returns>A populated <see cref="StockPrice"/> instance with randomized market values.</returns>
     private static StockPrice GenerateMockPrice(string symbol) =>
         new(symbol,
-            Random.Shared.Next(100, 1000),
+            Math.Round((decimal)(Random.Shared.NextDouble() * 900 + 100), 2),
             Random.Shared.NextDouble(),
             DateTime.UtcNow);
 }
