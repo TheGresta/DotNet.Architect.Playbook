@@ -98,6 +98,10 @@ internal sealed class PersistentConnection(
         if (!IsConnected && !await TryConnectAsync(ct).ConfigureAwait(false))
             throw new InvalidOperationException("Failed to establish RabbitMQ connection.");
 
+        // Throttle confirm channels with the same pool-slot budget as regular channels.
+        // Without this, a burst of WaitForConfirm=true publishes can open unbounded channels.
+        await _poolLimit.WaitAsync(ct).ConfigureAwait(false);
+
         try
         {
             // Publisher-confirm channels must NOT be pooled alongside standard channels.
@@ -107,10 +111,16 @@ internal sealed class PersistentConnection(
                 publisherConfirmationTrackingEnabled: true);
 
             var channel = await CreateNewChannelAsync(confirmOptions, ct).ConfigureAwait(false);
+
+            // Register the lease BEFORE handing it to the caller so DisposeAsync
+            // can safely wait for the count to reach zero.
+            Interlocked.Increment(ref _activeLeases);
             return new ChannelLease(this, channel, returnToPool: false);
         }
         catch (Exception ex)
         {
+            // Release the semaphore slot we reserved so it is not lost forever.
+            _poolLimit.Release();
             logger.LogError(ex, "Failed to acquire RabbitMQ confirm channel.");
             throw;
         }
@@ -154,6 +164,24 @@ internal sealed class PersistentConnection(
             if (IsConnected) return true;
 
             await CleanupPoolAsync().ConfigureAwait(false);
+
+            if (_connection is not null)
+            {
+                _connection.ConnectionShutdownAsync -= OnConnectionShutdown;
+                try
+                {
+                    if (_connection.IsOpen)
+                    {
+                        await _connection.CloseAsync(cancellationToken: ct).ConfigureAwait(false);
+                    }
+                }
+                catch
+                {
+                    // Ignore cleanup failures during reconnect.
+                }
+
+                _connection.Dispose();
+            }
 
             _connection = await connectionFactory.CreateConnectionAsync(ct).ConfigureAwait(false);
             _connection.ConnectionShutdownAsync += OnConnectionShutdown;
@@ -259,6 +287,30 @@ internal sealed class PersistentConnection(
     }
 
     /// <summary>
+    /// Disposes a non-pooled (confirm) channel and releases the pool slot +
+    /// active-lease counter that were acquired in <see cref="AcquireConfirmChannelAsync"/>.
+    /// </summary>
+    private async ValueTask ReleaseConfirmChannelAsync(IChannel channel)
+    {
+        try
+        {
+            // Always dispose; confirm channels are never returned to the pool.
+            await DisposeChannelInternalAsync(channel).ConfigureAwait(false);
+        }
+        finally
+        {
+            Interlocked.Decrement(ref _activeLeases);
+
+            if (!_disposed)
+            {
+                try { _poolLimit.Release(); }
+                catch (ObjectDisposedException) { }
+            }
+        }
+    }
+
+
+    /// <summary>
     /// A lightweight wrapper for an <see cref="IChannel"/> that either returns the channel
     /// to the pool or disposes it depending on <paramref name="returnToPool"/>.
     /// </summary>
@@ -282,7 +334,7 @@ internal sealed class PersistentConnection(
             if (returnToPool)
                 await connection.ReturnChannelAsync(Channel).ConfigureAwait(false);
             else
-                await DisposeChannelInternalAsync(Channel).ConfigureAwait(false);
+                await connection.ReleaseConfirmChannelAsync(Channel).ConfigureAwait(false);
         }
     }
 }
