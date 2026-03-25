@@ -33,10 +33,7 @@ internal sealed class MessageDispatcher(
     /// </exception>
     public async ValueTask DispatchAsync<T>(ReadOnlyMemory<byte> body, CancellationToken ct) where T : class
     {
-        // 1. Create a scoped provider for this specific message to isolate dependency lifetimes (e.g., DbContext)
-        await using var scope = scopeFactory.CreateAsyncScope();
-
-        // 2. Deserialize using the Source-Generated context for optimized performance and reduced reflection overhead
+        // 1. Deserialize using the Source-Generated context for optimized performance and reduced reflection overhead
         var message = JsonSerializer.Deserialize<T>(body.Span, MessagingJsonContext.Default.Options);
         if (message is null)
         {
@@ -44,7 +41,7 @@ internal sealed class MessageDispatcher(
             return;
         }
 
-        // 3. Resolve all handler types registered for this specific message contract
+        // 2. Resolve all handler types registered for this specific message contract
         var handlerTypes = consumerRegistry.GetHandlersForType(typeof(T));
         if (!handlerTypes.Any())
         {
@@ -52,15 +49,15 @@ internal sealed class MessageDispatcher(
             return;
         }
 
-        // 4. Instantiate and execute all handlers in parallel to minimize total processing latency
-        var tasks = handlerTypes.Select(handlerType =>
-        {
-            var handler = (IIntegrationEventHandler<T>)scope.ServiceProvider.GetRequiredService(handlerType);
-            return handler.HandleAsync(message, ct);
-        }).ToList(); // Materialize to catch resolution failures immediately
-
         try
         {
+            var tasks = handlerTypes.Select(async handlerType =>
+            {
+                await using var handlerScope = scopeFactory.CreateAsyncScope();
+                var handler = (IIntegrationEventHandler<T>)handlerScope.ServiceProvider.GetRequiredService(handlerType);
+                await handler.HandleAsync(message, ct).ConfigureAwait(false);
+            }).ToList();
+
             // Await completion of all handlers; failures are aggregated and caught below
             await Task.WhenAll(tasks).ConfigureAwait(false);
         }

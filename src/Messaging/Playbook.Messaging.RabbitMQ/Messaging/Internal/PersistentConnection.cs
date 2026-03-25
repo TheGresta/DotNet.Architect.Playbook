@@ -278,8 +278,19 @@ internal sealed class PersistentConnection(
         if (_connection is not null)
         {
             _connection.ConnectionShutdownAsync -= OnConnectionShutdown;
-            await _connection.CloseAsync().ConfigureAwait(false);
-            _connection.Dispose();
+            try
+            {
+                if (_connection.IsOpen)
+                    await _connection.CloseAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                logger.LogDebug(ex, "Ignoring RabbitMQ connection close failure during disposal.");
+            }
+            finally
+            {
+                _connection.Dispose();
+            }
         }
 
         _poolLimit.Dispose();
