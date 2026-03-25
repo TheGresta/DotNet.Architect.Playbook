@@ -1,0 +1,21 @@
+@hostname = localhost
+@port = 5241
+@baseUrl = http://{{hostname}}:{{port}}
+
+### Create a New Order (Triggers RabbitMQ Producer)
+# This endpoint generates a random OrderCreated event and publishes it
+# to the configured exchange (orders.v1.exchange).
+POST {{baseUrl}}/orders
+Content-Type: application/json
+
+{}
+
+###
+# Note: Since the endpoint logic currently generates the 
+# Guid and DateTime internally, we send an empty JSON object.
+# If you decide to pass data from the body later, you can update it like this:
+# POST {{baseUrl}}/orders
+# Content-Type: application/json
+# {
+#   "totalAmount": 150.50
+# }
