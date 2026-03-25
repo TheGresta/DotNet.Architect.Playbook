@@ -6,8 +6,7 @@ namespace Playbook.Messaging.RabbitMQ.Messaging.Internal;
 
 public sealed class ConsumerRegistry
 {
-    // Maps Message Type -> List of Handler Types
-    private readonly ConcurrentDictionary<Type, List<Type>> _handlerMappings = new();
+    private readonly ConcurrentDictionary<Type, ConcurrentBag<Type>> _handlerMappings = [];
 
     public void RegisterHandler<T, THandler>()
         where T : class
@@ -18,7 +17,5 @@ public sealed class ConsumerRegistry
     }
 
     public IEnumerable<Type> GetHandlersForType(Type messageType) =>
-        _handlerMappings.TryGetValue(messageType, out var handlers) ? handlers : Enumerable.Empty<Type>();
-
-    public IEnumerable<Type> GetRegisteredMessageTypes() => _handlerMappings.Keys;
+        _handlerMappings.TryGetValue(messageType, out var handlers) ? handlers : [];
 }

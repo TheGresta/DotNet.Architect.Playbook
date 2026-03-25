@@ -17,7 +17,7 @@ builder.Services.AddRabbitMessaging(rabbitSection.Bind)
 .AddProducer<OrderCreated>(setup => setup
     .ToExchange("orders.v1.exchange")
     .WithDeadLetter("orders.v1.error.exchange")
-    .WithTTL(TimeSpan.FromDays(1))
+    .WithTtl(TimeSpan.FromDays(1))
 )
 .AddConsumer<OrderCreated>(config =>
 {

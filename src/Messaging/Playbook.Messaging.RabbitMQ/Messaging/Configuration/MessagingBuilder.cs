@@ -5,7 +5,10 @@ using Playbook.Messaging.RabbitMQ.Messaging.Internal;
 
 namespace Playbook.Messaging.RabbitMQ.Messaging.Configuration;
 
-public sealed class MessagingBuilder(IServiceCollection services, ConsumerRegistry consumerRegistry, MessageEndpointRegistry endpointRegistry)
+public sealed class MessagingBuilder(
+    IServiceCollection services,
+    ConsumerRegistry consumerRegistry,
+    MessageEndpointRegistry endpointRegistry)
 {
     public MessagingBuilder AddProducer<T>(Action<MessageTypeBuilder<T>> configure) where T : class
     {
@@ -13,6 +16,8 @@ public sealed class MessagingBuilder(IServiceCollection services, ConsumerRegist
         configure(builder);
 
         endpointRegistry.AddDefinition<T>(builder.Build());
+
+        // Use TryAdd to prevent multiple registrations of the same producer type
         services.AddSingleton<IProducer<T>, RabbitProducer<T>>();
         return this;
     }
@@ -22,6 +27,7 @@ public sealed class MessagingBuilder(IServiceCollection services, ConsumerRegist
         var regBuilder = new ConsumerRegistrationBuilder<T>(services, consumerRegistry);
         configure(regBuilder);
 
+        // Every consumer gets its own background engine instance
         services.AddHostedService<RabbitConsumerEngine<T>>();
         return this;
     }

@@ -2,7 +2,11 @@
 
 public sealed class MessageTypeBuilder<T> where T : class
 {
-    private readonly MessageEndpointDefinition _definition = new();
+    private readonly MessageEndpointDefinition _definition = new()
+    {
+        // Default exchange name based on type if not specified
+        ExchangeName = typeof(T).Name
+    };
 
     public MessageTypeBuilder<T> ToExchange(string name)
     {
@@ -16,7 +20,7 @@ public sealed class MessageTypeBuilder<T> where T : class
         return this;
     }
 
-    public MessageTypeBuilder<T> WithTTL(TimeSpan ttl)
+    public MessageTypeBuilder<T> WithTtl(TimeSpan ttl)
     {
         _definition.Ttl = ttl;
         return this;

@@ -3,6 +3,7 @@
 using Playbook.Messaging.RabbitMQ.Messaging.Configuration;
 
 using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 
 namespace Playbook.Messaging.RabbitMQ.Messaging.Internal;
 
@@ -11,75 +12,88 @@ internal sealed class PersistentConnection(
     RabbitOptions options,
     ILogger<PersistentConnection> logger) : IAsyncDisposable
 {
+    private readonly ConcurrentQueue<IChannel> _channelPool = new();
+    private readonly SemaphoreSlim _poolLimit = new(options.ChannelPoolSize, options.ChannelPoolSize);
+    private readonly SemaphoreSlim _connectionLock = new(1, 1);
+
     private IConnection? _connection;
     private bool _disposed;
-    private readonly ConcurrentQueue<IChannel> _channelPool = new();
-    private readonly SemaphoreSlim _poolLock = new(options.ChannelPoolSize, options.ChannelPoolSize);
-    private readonly SemaphoreSlim _connectionLock = new(1, 1);
 
     public bool IsConnected => _connection is { IsOpen: true } && !_disposed;
 
-    public async ValueTask<IChannel> GetChannelAsync(CancellationToken ct = default)
+    /// <summary>
+    /// Acquires a channel wrapped in a lease. The channel is returned to the pool automatically when disposed.
+    /// </summary>
+    public async ValueTask<ChannelLease> AcquireAsync(CancellationToken ct = default)
     {
-        if (!IsConnected) await TryConnectAsync(ct);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
-        await _poolLock.WaitAsync(ct);
+        if (!IsConnected)
+        {
+            await TryConnectAsync(ct).ConfigureAwait(false);
+        }
+
+        await _poolLimit.WaitAsync(ct).ConfigureAwait(false);
 
         try
         {
-            if (_channelPool.TryDequeue(out var channel) && channel.IsOpen)
+            IChannel? channel = null;
+            while (_channelPool.TryDequeue(out var pooledChannel))
             {
-                return channel;
+                if (pooledChannel.IsOpen)
+                {
+                    channel = pooledChannel;
+                    break;
+                }
+                await DisposeChannelInternalAsync(pooledChannel).ConfigureAwait(false);
             }
 
-            // Create a new channel if pool is empty or channel was dead
-            return await _connection!.CreateChannelAsync(cancellationToken: ct);
+            channel ??= await CreateNewChannelAsync(ct).ConfigureAwait(false);
+
+            return new ChannelLease(this, channel);
         }
         catch (Exception ex)
         {
-            _poolLock.Release(); // Must release if creation fails
-            logger.LogError(ex, "Failed to create or retrieve RabbitMQ channel.");
+            _poolLimit.Release();
+            logger.LogError(ex, "Failed to acquire RabbitMQ channel lease.");
             throw;
         }
     }
 
-    public void ReturnChannel(IChannel channel)
+    private async ValueTask ReturnChannelAsync(IChannel channel)
     {
-        if (channel.IsOpen && !_disposed)
+        if (_disposed || !channel.IsOpen)
         {
-            _channelPool.Enqueue(channel);
-            _poolLock.Release();
+            await DisposeChannelInternalAsync(channel).ConfigureAwait(false);
+            _poolLimit.Release();
+            return;
         }
-        else
-        {
-            channel.Dispose();
-            _poolLock.Release();
-        }
+
+        _channelPool.Enqueue(channel);
+        _poolLimit.Release();
     }
 
     public async ValueTask<bool> TryConnectAsync(CancellationToken ct = default)
     {
         if (IsConnected) return true;
 
-        await _connectionLock.WaitAsync(ct);
+        await _connectionLock.WaitAsync(ct).ConfigureAwait(false);
         try
         {
             if (IsConnected) return true;
 
-            // Clear invalid channels from a previous connection
-            while (_channelPool.TryDequeue(out var oldChannel))
-                oldChannel.Dispose();
+            await CleanupPoolAsync().ConfigureAwait(false);
 
-            _connection = await connectionFactory.CreateConnectionAsync(ct);
+            _connection = await connectionFactory.CreateConnectionAsync(ct).ConfigureAwait(false);
+            _connection.ConnectionShutdownAsync += OnConnectionShutdown;
 
-            _connection.ConnectionShutdownAsync += async (s, e) =>
-            {
-                logger.LogWarning("RabbitMQ connection lost. Reason: {Reason}", e.ReplyText);
-                // We don't reconnect here immediately to avoid infinite loops during network outages.
-                // The next 'GetChannelAsync' call will trigger the reconnect.
-            };
-
+            logger.LogInformation("RabbitMQ Client connected to {Endpoint}", _connection.Endpoint);
             return true;
+        }
+        catch (Exception ex)
+        {
+            logger.LogCritical(ex, "Fatal error connecting to RabbitMQ node.");
+            return false;
         }
         finally
         {
@@ -87,14 +101,60 @@ internal sealed class PersistentConnection(
         }
     }
 
+    private Task OnConnectionShutdown(object sender, ShutdownEventArgs e)
+    {
+        logger.LogWarning("RabbitMQ connection lost. Reason: {Reason}", e.ReplyText);
+        return Task.CompletedTask;
+    }
+
+    private async ValueTask<IChannel> CreateNewChannelAsync(CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(_connection);
+        return await _connection.CreateChannelAsync(cancellationToken: ct).ConfigureAwait(false);
+    }
+
+    private async ValueTask CleanupPoolAsync()
+    {
+        while (_channelPool.TryDequeue(out var oldChannel))
+        {
+            await DisposeChannelInternalAsync(oldChannel).ConfigureAwait(false);
+        }
+    }
+
+    private static async ValueTask DisposeChannelInternalAsync(IChannel channel)
+    {
+        try
+        {
+            if (channel.IsOpen) await channel.CloseAsync().ConfigureAwait(false);
+            channel.Dispose();
+        }
+        catch { /* Suppression for background cleanup */ }
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_disposed) return;
         _disposed = true;
 
-        while (_channelPool.TryDequeue(out var channel))
-            channel.Dispose();
+        await CleanupPoolAsync().ConfigureAwait(false);
 
-        if (_connection != null) await _connection.CloseAsync();
+        if (_connection is not null)
+        {
+            _connection.ConnectionShutdownAsync -= OnConnectionShutdown;
+            await _connection.CloseAsync().ConfigureAwait(false);
+            _connection.Dispose();
+        }
+
+        _poolLimit.Dispose();
+        _connectionLock.Dispose();
+    }
+
+    public readonly struct ChannelLease(PersistentConnection connection, IChannel channel) : IAsyncDisposable
+    {
+        public IChannel Channel { get; } = channel;
+
+        public async ValueTask DisposeAsync() =>
+            // Now we can properly await the return logic
+            await connection.ReturnChannelAsync(Channel).ConfigureAwait(false);
     }
 }

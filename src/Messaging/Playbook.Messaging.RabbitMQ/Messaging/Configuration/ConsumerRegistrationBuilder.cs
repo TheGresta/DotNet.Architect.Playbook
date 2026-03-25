@@ -10,12 +10,9 @@ public sealed class ConsumerRegistrationBuilder<T>(
     public ConsumerRegistrationBuilder<T> AddHandler<THandler>()
         where THandler : class, IIntegrationEventHandler<T>
     {
-        // Register the handler type so DI can find it later
+        // Register as Scoped: Dispatcher creates a scope per message
         services.AddScoped<THandler>();
-
-        // Directly update the registry instance we passed in
         registry.RegisterHandler<T, THandler>();
-
         return this;
     }
 }

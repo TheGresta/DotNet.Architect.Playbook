@@ -10,10 +10,6 @@ public sealed class MessageEndpointRegistry
 
     public void AddDefinition<T>(MessageEndpointDefinition definition) => _definitions[typeof(T)] = definition;
 
-    public MessageEndpointDefinition GetDefinition<T>()
-    {
-        return _definitions.TryGetValue(typeof(T), out var definition)
-               ? definition
-               : new MessageEndpointDefinition { ExchangeName = typeof(T).Name };
-    }
+    public MessageEndpointDefinition GetDefinition<T>() =>
+        _definitions.GetValueOrDefault(typeof(T)) ?? new MessageEndpointDefinition { ExchangeName = typeof(T).Name };
 }

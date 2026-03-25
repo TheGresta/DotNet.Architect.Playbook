@@ -1,6 +1,6 @@
 ﻿namespace Playbook.Messaging.RabbitMQ.Messaging.Configuration;
 
-public sealed class MessageEndpointDefinition
+public sealed record MessageEndpointDefinition
 {
     public string ExchangeName { get; set; } = string.Empty;
     public string RoutingKey { get; set; } = string.Empty;

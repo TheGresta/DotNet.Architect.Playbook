@@ -1,4 +1,7 @@
-﻿using Playbook.Messaging.RabbitMQ.Messaging.Internal;
+﻿using Microsoft.Extensions.DependencyInjection.Extensions;
+
+using Playbook.Messaging.RabbitMQ.Messaging.Abstractions;
+using Playbook.Messaging.RabbitMQ.Messaging.Internal;
 
 using RabbitMQ.Client;
 
@@ -21,9 +24,11 @@ public static class MessagingExtensions
         var consumerRegistry = new ConsumerRegistry();
 
         // 4. Core Infrastructure Registration
-        services.AddSingleton(endpointRegistry);
-        services.AddSingleton(consumerRegistry);
-        services.AddSingleton<PersistentConnection>();
+        services.TryAddSingleton(endpointRegistry);
+        services.TryAddSingleton(consumerRegistry);
+        services.TryAddSingleton<PersistentConnection>();
+        services.TryAddSingleton<ITopologyManager, RabbitTopologyManager>();
+        services.TryAddSingleton<IMessageDispatcher, MessageDispatcher>();
 
         // 5. RabbitMQ Client Factory Setup (v7+ Optimized)
         services.AddSingleton<IConnectionFactory>(sp =>
