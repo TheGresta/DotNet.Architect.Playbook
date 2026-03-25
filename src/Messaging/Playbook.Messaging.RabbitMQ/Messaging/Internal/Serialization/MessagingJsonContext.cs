@@ -4,8 +4,16 @@ using Playbook.Messaging.RabbitMQ.Models;
 
 namespace Playbook.Messaging.RabbitMQ.Messaging.Internal.Serialization;
 
-// We use a marker interface or object to allow any class to be serialized 
-// without needing to update this context for every single new message type.
+/// <summary>
+/// Provides a high-performance, source-generated <see cref="JsonSerializerContext"/> for the messaging subsystem.
+/// By utilizing .NET 10 source generation, this context eliminates the need for runtime reflection during 
+/// serialization and deserialization, significantly reducing CPU overhead and memory allocations.
+/// </summary>
+/// <remarks>
+/// This partial class is augmented by the C# compiler to generate optimized metadata for the 
+/// specified types. It is configured with strict performance-oriented options such as 
+/// disabled indentation and camelCase naming policies.
+/// </remarks>
 [JsonSerializable(typeof(object))]
 [JsonSerializable(typeof(OrderCreated))]
 [JsonSourceGenerationOptions(
