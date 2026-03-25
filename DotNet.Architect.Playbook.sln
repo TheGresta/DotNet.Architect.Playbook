@@ -21,6 +21,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Playbook.Exceptions", "src\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Playbook.Architecture.CQRS", "src\Infrastructure\Playbook.Architecture.CQRS\Playbook.Architecture.CQRS.csproj", "{4FE07CA5-BF13-427E-A5D2-3AAE31144774}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Messaging", "Messaging", "{D5F16108-D25F-4E89-8EE2-D148134F1CFC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Playbook.Messaging.SignalR", "src\Messaging\Playbook.Messaging.SignalR\Playbook.Messaging.SignalR.csproj", "{56D0DF41-F6AF-485D-A8A6-A0DDC10F0474}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,6 +55,10 @@ Global
 		{4FE07CA5-BF13-427E-A5D2-3AAE31144774}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4FE07CA5-BF13-427E-A5D2-3AAE31144774}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4FE07CA5-BF13-427E-A5D2-3AAE31144774}.Release|Any CPU.Build.0 = Release|Any CPU
+		{56D0DF41-F6AF-485D-A8A6-A0DDC10F0474}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{56D0DF41-F6AF-485D-A8A6-A0DDC10F0474}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{56D0DF41-F6AF-485D-A8A6-A0DDC10F0474}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{56D0DF41-F6AF-485D-A8A6-A0DDC10F0474}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -64,6 +72,8 @@ Global
 		{117F0BAC-D4AD-4D3E-A47F-41B4BEB80295} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{A411362E-2D9E-48FD-99BD-699B0B7E4231} = {117F0BAC-D4AD-4D3E-A47F-41B4BEB80295}
 		{4FE07CA5-BF13-427E-A5D2-3AAE31144774} = {117F0BAC-D4AD-4D3E-A47F-41B4BEB80295}
+		{D5F16108-D25F-4E89-8EE2-D148134F1CFC} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{56D0DF41-F6AF-485D-A8A6-A0DDC10F0474} = {D5F16108-D25F-4E89-8EE2-D148134F1CFC}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {EA232F1A-641A-407A-B4CE-E71BB7CF7D6B}
