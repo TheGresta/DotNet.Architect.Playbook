@@ -19,7 +19,7 @@ public class CriticalFailureConsumer(ILogger<CriticalFailureConsumer> logger)
     /// This indicates that the system was unable to automatically revert changes for the first stage.
     /// </summary>
     /// <param name="context">The fault context containing the original message and the collection of exceptions that occurred.</param>
-    public async Task Consume(ConsumeContext<Fault<UndoState1>> context)
+    public Task Consume(ConsumeContext<Fault<UndoState1>> context)
     {
         // Extract the original command that failed and the exception details for diagnostic reporting.
         var originalMessage = context.Message.Message;
@@ -36,7 +36,7 @@ public class CriticalFailureConsumer(ILogger<CriticalFailureConsumer> logger)
             originalMessage.CorrelationId,
             exceptions.FirstOrDefault()?.Message);
 
-        await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     /// <summary>
@@ -44,12 +44,12 @@ public class CriticalFailureConsumer(ILogger<CriticalFailureConsumer> logger)
     /// Triggered when the second stage of compensation fails repeatedly and requires DevOps attention.
     /// </summary>
     /// <param name="context">The fault context for the failed second stage undo operation.</param>
-    public async Task Consume(ConsumeContext<Fault<UndoState2>> context)
+    public Task Consume(ConsumeContext<Fault<UndoState2>> context)
     {
         // Log a critical alert focusing on the specific correlation ID to facilitate rapid tracing in logs.
         logger.LogCritical("[FATAL ERROR] UndoState2 failed for {Id}. Alerting DevOps...",
             context.Message.Message.CorrelationId);
 
-        await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 }
