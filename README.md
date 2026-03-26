@@ -9,7 +9,7 @@
 [![Semantic Release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 
 [![Repository Size](https://img.shields.io/github/repo-size/TheGresta/DotNet.Architect.Playbook?color=success)](#)
-[![Last Commit](https://img.shields.io/github/last-commit/TheGresta/DotNet.Architect.Playbook?color=success)](#)
+[![Last Commit](https://img.shields.io/github/last-commit/TheGresta/DotNet.Architect.Playbook?color=success)](https://github.com/TheGresta/DotNet.Architect.Playbook/commits/main)
 <br>
 [![Open Issues](https://img.shields.io/github/issues/TheGresta/DotNet.Architect.Playbook?color=blue)](https://github.com/TheGresta/DotNet.Architect.Playbook/issues)
 [![Closed Issues](https://img.shields.io/github/issues-closed/TheGresta/DotNet.Architect.Playbook?color=purple)](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+is%3Aclosed)
@@ -45,7 +45,7 @@ Below is the comprehensive directory of architectural chapters. Each module is a
 | ✅ | **Document Store** | MongoDB | [📖 Readme](./src/Persistence/Playbook.Persistence.MongoDB/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3AmongoDb) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3AmongoDb) |
 | ✅ | **Relational Data** | EF Core | [📖 Readme](./src/Persistence/Playbook.Persistence.EntityFramework/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Aefcore) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Aefcore) |
 | ✅ | **Distributed Cache** | Redis (Stack) | [📖 Readme](./src/Persistence/Playbook.Persistence.Redis/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Aredis) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Aredis) |
-| 🚧 | **Hybrid Caching** | .NET 9 HybridCache | [📖 Readme](./src/Persistence/Playbook.Persistence.HybridCache/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Ahybrid-cache) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Ahybrid-cache) |
+| 📅 | **Hybrid Caching** | .NET 9 HybridCache | [📖 Readme](./src/Persistence/Playbook.Persistence.HybridCache/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Ahybrid-cache) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Ahybrid-cache) |
 
 ### 📨 Messaging & Integration
 *Patterns for decoupled communication and event-driven choreography.*
@@ -55,7 +55,7 @@ Below is the comprehensive directory of architectural chapters. Each module is a
 | ✅ | **Message Broker** | RabbitMQ | [📖 Readme](./src/Messaging/Playbook.Messaging.RabbitMQ/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Arabbitmq) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Arabbitmq) |
 | ✅ | **State Machine Saga** | MassTransit Saga | [📖 Readme](./src/Messaging/Playbook.Messaging.MassTransit.Saga/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Amasstransit) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Amasstransit) |
 | ✅ | **Real-Time Pushing** | SignalR & Redis | [📖 Readme](./src/Messaging/Playbook.Messaging.SignalR/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Asignalr) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Asignalr) |
-| 📅 | **Routing Slips** | MassTransit Courier | [📖 Readme](./src/Messaging/Playbook.Messaging.MassTransit.Courier/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Amasstransit) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Amasstransit) |
+| ✅ | **Routing Slips** | MassTransit Courier | [📖 Readme](./src/Messaging/Playbook.Messaging.MassTransit.Courier/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Amasstransit) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Amasstransit) |
 | 📅 | **Event Streaming** | Kafka | [📖 Readme](./src/Messaging/Playbook.Messaging.Kafka/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Akafka) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Akafka) |
 
 ### 🛡️ Core Infrastructure & API Design
@@ -65,7 +65,7 @@ Below is the comprehensive directory of architectural chapters. Each module is a
 | :---: | :--- | :--- | :--- | :--- |
 | ✅ | **CQRS Pattern** | MediatR | [📖 Readme](./src/Infrastructure/Playbook.Architecture.CQRS/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Acqrs) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Acqrs) |
 | ✅ | **Exception Handling** | Custom Middleware | [📖 Readme](./src/Infrastructure/Playbook.Exceptions/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3AexceptionHandling) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3AexceptionHandling) |
-| 🚧 | **Federated Graphs** | GraphQL / Hot Chocolate | [📖 Readme](./src/API/Playbook.API.GraphQL/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Agraphql) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Agraphql) |
+| 📅 | **Federated Graphs** | GraphQL / Hot Chocolate | [📖 Readme](./src/API/Playbook.API.GraphQL/README.md) | [🐛 Issues](https://github.com/TheGresta/DotNet.Architect.Playbook/issues?q=is%3Aissue+label%3Agraphql) \| [🔄 PRs](https://github.com/TheGresta/DotNet.Architect.Playbook/pulls?q=is%3Apr+label%3Agraphql) |
 
 ### 🤖 AI, DevOps & Security (Upcoming)
 *Modern integrations for cloud-native intelligence and observability.*
