@@ -1,0 +1,19 @@
+@BaseUrl = http://localhost:5204
+@OrderName = "Enterprise_Cloud_Server_002"
+
+### 1. Trigger a New Saga Workflow
+# This will start the flow: State 1 -> State 2 -> State 3.
+# With a 50% failure rate at each step, watch the console 
+# for "LIFO Rollback" (Undo 2 then Undo 1).
+POST {{BaseUrl}}/workflow/start?name={{OrderName}}
+Content-Type: application/json
+
+{}
+
+### 2. Trigger another Workflow (Different CorrelationId)
+# Each click generates a unique Guid, allowing multiple 
+# sagas to run in parallel without state collision.
+POST {{BaseUrl}}/workflow/start?name="Bulk_Storage_Unit_99"
+Content-Type: application/json
+
+{}
