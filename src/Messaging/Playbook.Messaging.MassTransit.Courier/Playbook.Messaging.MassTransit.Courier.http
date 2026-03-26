@@ -1,0 +1,20 @@
+### Variables
+@Host = http://localhost:5034
+@ContentType = application/json
+
+### 1. Trigger Workflow (Success/Fail Trial 1)
+# Hit this multiple times to see the Chaos Engine in action.
+POST {{Host}}/start-workflow
+Content-Type: {{ContentType}}
+
+{}
+
+### 2. Trigger Workflow (Success/Fail Trial 2)
+POST {{Host}}/start-workflow
+Content-Type: {{ContentType}}
+
+{}
+
+### 3. Check System Health
+# Just to ensure the "Stove" is still hot.
+GET {{Host}}/
