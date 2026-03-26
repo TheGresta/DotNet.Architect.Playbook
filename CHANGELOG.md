@@ -1,3 +1,15 @@
+# [1.8.0](https://github.com/TheGresta/DotNet.Architect.Playbook/compare/v1.7.1...v1.8.0) (2026-03-26)
+
+
+### Bug Fixes
+
+* **masstransit:** [Issue [#24](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/24)] ai suggestions ([eecdce0](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/eecdce04a66a01f40e4321746ae988a6e9133d3c))
+
+
+### Features
+
+* **masstransit:** [Issue [#24](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/24)] initial masstransit system ([bfef889](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/bfef8897c7c585878bce99d3bd06b09216e8931c))
+
 ## [1.7.1](https://github.com/TheGresta/DotNet.Architect.Playbook/compare/v1.7.0...v1.7.1) (2026-03-25)
 
 
