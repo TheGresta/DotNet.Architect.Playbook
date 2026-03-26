@@ -1,4 +1,4 @@
-﻿namespace Playbook.Messaging.MassTransit.Application.Services;
+﻿namespace Playbook.Messaging.MassTransit.Saga.Application.Services;
 
 /// <summary>
 /// Defines a service used to simulate transient or random failures within the system.

@@ -2,10 +2,10 @@ using MassTransit;
 
 using Microsoft.EntityFrameworkCore;
 
-using Playbook.Messaging.MassTransit.Application.Services;
-using Playbook.Messaging.MassTransit.Contracts;
-using Playbook.Messaging.MassTransit.Infrastructure.Messaging;
-using Playbook.Messaging.MassTransit.Infrastructure.Persistence;
+using Playbook.Messaging.MassTransit.Saga.Application.Services;
+using Playbook.Messaging.MassTransit.Saga.Contracts;
+using Playbook.Messaging.MassTransit.Saga.Infrastructure.Messaging;
+using Playbook.Messaging.MassTransit.Saga.Infrastructure.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 

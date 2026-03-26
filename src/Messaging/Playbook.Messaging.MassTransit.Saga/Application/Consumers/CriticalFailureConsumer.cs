@@ -1,8 +1,8 @@
 ﻿using MassTransit;
 
-using Playbook.Messaging.MassTransit.Contracts;
+using Playbook.Messaging.MassTransit.Saga.Contracts;
 
-namespace Playbook.Messaging.MassTransit.Application.Consumers;
+namespace Playbook.Messaging.MassTransit.Saga.Application.Consumers;
 
 /// <summary>
 /// A specialized "Dead Letter" or Fault consumer designed to handle terminal failures in the compensation logic.

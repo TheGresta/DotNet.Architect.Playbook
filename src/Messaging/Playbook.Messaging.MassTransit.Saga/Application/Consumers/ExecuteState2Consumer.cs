@@ -1,9 +1,9 @@
 ﻿using MassTransit;
 
-using Playbook.Messaging.MassTransit.Application.Services;
-using Playbook.Messaging.MassTransit.Contracts;
+using Playbook.Messaging.MassTransit.Saga.Application.Services;
+using Playbook.Messaging.MassTransit.Saga.Contracts;
 
-namespace Playbook.Messaging.MassTransit.Application.Consumers;
+namespace Playbook.Messaging.MassTransit.Saga.Application.Consumers;
 
 /// <summary>
 /// Consumer responsible for executing the second stage of the distributed workflow.

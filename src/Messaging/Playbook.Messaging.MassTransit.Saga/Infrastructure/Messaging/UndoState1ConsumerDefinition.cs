@@ -1,8 +1,8 @@
 ﻿using MassTransit;
 
-using Playbook.Messaging.MassTransit.Application.Consumers;
+using Playbook.Messaging.MassTransit.Saga.Application.Consumers;
 
-namespace Playbook.Messaging.MassTransit.Infrastructure.Messaging;
+namespace Playbook.Messaging.MassTransit.Saga.Infrastructure.Messaging;
 
 /// <summary>
 /// Defines the endpoint configuration and behavioral policies for the <see cref="UndoState1Consumer"/>.

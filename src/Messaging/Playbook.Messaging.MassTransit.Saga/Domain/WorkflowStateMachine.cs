@@ -1,8 +1,8 @@
 ﻿using MassTransit;
 
-using Playbook.Messaging.MassTransit.Contracts;
+using Playbook.Messaging.MassTransit.Saga.Contracts;
 
-namespace Playbook.Messaging.MassTransit.Domain;
+namespace Playbook.Messaging.MassTransit.Saga.Domain;
 
 /// <summary>
 /// Defines the state machine logic for managing a multi-stage distributed workflow with compensation (rollback) capabilities.

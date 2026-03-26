@@ -1,6 +1,6 @@
 ﻿using MassTransit;
 
-namespace Playbook.Messaging.MassTransit.Domain;
+namespace Playbook.Messaging.MassTransit.Saga.Domain;
 
 /// <summary>
 /// Represents the persisted state of a saga instance within the workflow.

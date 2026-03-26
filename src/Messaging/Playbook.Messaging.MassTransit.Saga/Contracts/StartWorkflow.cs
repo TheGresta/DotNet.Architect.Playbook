@@ -1,4 +1,4 @@
-﻿namespace Playbook.Messaging.MassTransit.Contracts;
+﻿namespace Playbook.Messaging.MassTransit.Saga.Contracts;
 
 // --- Commands (The "Intent") ---
 

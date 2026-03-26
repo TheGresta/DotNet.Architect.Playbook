@@ -1,9 +1,9 @@
 ﻿using MassTransit;
 
-using Playbook.Messaging.MassTransit.Domain;
-using Playbook.Messaging.MassTransit.Infrastructure.Persistence;
+using Playbook.Messaging.MassTransit.Saga.Domain;
+using Playbook.Messaging.MassTransit.Saga.Infrastructure.Persistence;
 
-namespace Playbook.Messaging.MassTransit.Infrastructure.Messaging;
+namespace Playbook.Messaging.MassTransit.Saga.Infrastructure.Messaging;
 
 /// <summary>
 /// Provides extension methods for the <see cref="IServiceCollection"/> to centralize and simplify 

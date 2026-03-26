@@ -1,4 +1,4 @@
-﻿namespace Playbook.Messaging.MassTransit.Infrastructure.Messaging;
+﻿namespace Playbook.Messaging.MassTransit.Saga.Infrastructure.Messaging;
 
 /// <summary>
 /// Represents the configuration options required to establish a connection with the message broker.

@@ -2,9 +2,9 @@
 
 using Microsoft.EntityFrameworkCore;
 
-using Playbook.Messaging.MassTransit.Domain;
+using Playbook.Messaging.MassTransit.Saga.Domain;
 
-namespace Playbook.Messaging.MassTransit.Infrastructure.Persistence;
+namespace Playbook.Messaging.MassTransit.Saga.Infrastructure.Persistence;
 
 /// <summary>
 /// The primary Entity Framework Core database context for the application.
