@@ -95,9 +95,9 @@ public sealed class GlobalProblemDetailsFactory(
                 // are passed through the provider for potential custom overrides.
                 errorMessages[i] = stringProvider.Get(entry.Errors[i].ErrorMessage);
                 var rawMessage = entry.Errors[i].ErrorMessage;
-                errorMessages[i] = IsLocalizationKey(rawMessage)
-                     ? stringProvider.Get(rawMessage)
-                     : rawMessage; ;
+                //errorMessages[i] = IsLocalizationKey(rawMessage)
+                //? stringProvider.Get(rawMessage)
+                //: rawMessage; ;
             }
 
             // Ensures keys are added only once to prevent dictionary collision.
