@@ -8,6 +8,7 @@
 [![License](https://img.shields.io/github/license/TheGresta/DotNet.Architect.Playbook?color=orange)](LICENSE)
 [![Semantic Release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
 
+[![Stars](https://img.shields.io/github/stars/TheGresta/DotNet.Architect.Playbook?style=flat&color=FFD700&logo=github)](https://github.com/TheGresta/DotNet.Architect.Playbook/stargazers)
 [![Repository Size](https://img.shields.io/github/repo-size/TheGresta/DotNet.Architect.Playbook?color=success)](#)
 [![Last Commit](https://img.shields.io/github/last-commit/TheGresta/DotNet.Architect.Playbook?color=success)](https://github.com/TheGresta/DotNet.Architect.Playbook/commits/main)
 <br>
