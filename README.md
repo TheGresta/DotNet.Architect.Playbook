@@ -179,7 +179,7 @@ This playbook is open to the community. If you have an architectural pattern or 
 
 3. **Submit**: Open a Pull Request using the repository's PR Template.
 
-  💡 * Note on Tracking Links: The Issues/PRs links in the tables above use GitHub search query parameters (e.g., `label:elasticsearch`). Ensure you label your issues and PRs accordingly in the repository so they auto-populate in these views!
+  * 💡 Note on Tracking Links: The Issues/PRs links in the tables above use GitHub search query parameters (e.g., `label:elasticsearch`). Ensure you label your issues and PRs accordingly in the repository so they auto-populate in these views!
 
   ---
 
