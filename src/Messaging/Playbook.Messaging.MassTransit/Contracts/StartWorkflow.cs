@@ -11,8 +11,8 @@ public record UndoState1(Guid CorrelationId, string Reason);
 public record UndoState2(Guid CorrelationId, string Reason);
 
 // --- Rollback Completion Events ---
-public record State2Undone(Guid CorrelationId);
 public record State1Undone(Guid CorrelationId);
+public record State2Undone(Guid CorrelationId);
 
 // --- Events (The "Fact") ---
 public record State1Completed(Guid CorrelationId);
