@@ -27,7 +27,7 @@ public class StateOneActivity(IChaosProvider chaos, ILogger<StateOneActivity> lo
     /// </summary>
     /// <param name="context">The execution context containing <see cref="StateOneArgs"/>.</param>
     /// <returns>A task representing the asynchronous execution result.</returns>
-    public async Task<MassTransit.ExecutionResult> Execute(ExecuteContext<StateOneArgs> context)
+    public async Task<ExecutionResult> Execute(ExecuteContext<StateOneArgs> context)
     {
         logger.LogInformation("[FORWARD] State 1: Starting for {Id}", context.Arguments.TransactionId);
 
@@ -57,7 +57,7 @@ public class StateOneActivity(IChaosProvider chaos, ILogger<StateOneActivity> lo
         catch (ChaosException)
         {
             // Escalation point: If compensation fails, the system enters an inconsistent state requiring manual intervention
-            logger.LogCritical("🚨 [ALERT] State 1 Compensation EXHAUSTED retries. Manual DB cleanup required!");
+            logger.LogCritical("🚨 [ALERT] State 1 Compensation failed on first attempt!");
             throw;
         }
     }

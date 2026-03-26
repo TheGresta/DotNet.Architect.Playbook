@@ -22,13 +22,13 @@ public class StateThreeActivity(IChaosProvider chaos, ILogger<StateThreeActivity
     /// </summary>
     /// <param name="context">The execution context containing <see cref="StateThreeArgs"/>.</param>
     /// <returns>A task representing the asynchronous execution result.</returns>
-    public async Task<MassTransit.ExecutionResult> Execute(ExecuteContext<StateThreeArgs> context)
+    public Task<ExecutionResult> Execute(ExecuteContext<StateThreeArgs> context)
     {
         logger.LogInformation("[FORWARD] State 3: Finalizing transaction...");
 
         chaos.EnsureStability("State 3 Execution");
 
         logger.LogInformation("[FINISH] State 3 Completed. Workflow Success!");
-        return context.Completed();
+        return Task.FromResult(context.Completed());
     }
 }

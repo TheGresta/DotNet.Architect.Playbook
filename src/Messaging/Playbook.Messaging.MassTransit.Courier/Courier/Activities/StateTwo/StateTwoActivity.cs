@@ -26,7 +26,7 @@ public class StateTwoActivity(IChaosProvider chaos, ILogger<StateTwoActivity> lo
     /// </summary>
     /// <param name="context">The execution context containing <see cref="StateTwoArgs"/>.</param>
     /// <returns>A task representing the asynchronous execution result.</returns>
-    public async Task<MassTransit.ExecutionResult> Execute(ExecuteContext<StateTwoArgs> context)
+    public async Task<ExecutionResult> Execute(ExecuteContext<StateTwoArgs> context)
     {
         logger.LogInformation("[FORWARD] State 2: Processing data...");
 
@@ -35,7 +35,7 @@ public class StateTwoActivity(IChaosProvider chaos, ILogger<StateTwoActivity> lo
         logger.LogInformation("[SUCCESS] State 2 Completed.");
 
         // Passing a specific ProcessId to the log to ensure compensation targets the correct resource
-        return context.Completed(new StateTwoLog("PROC-99"));
+        return context.Completed(new StateTwoLog(context.Arguments.TransactionId.ToString("N")));
     }
 
     /// <summary>
