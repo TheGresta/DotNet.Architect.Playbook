@@ -22,35 +22,9 @@
 
 ### 📊 System Visualization
 
-```mermaid
-graph TD
-    API([Client Request]) -->|POST /workflow/start| Bus[MassTransit Service Bus]
-    Bus -->|StartWorkflow| Saga[Workflow State Machine]
-    
-    subgraph Persistence [Reliable Storage]
-        Saga <-->|State Persistence| DB[(PostgreSQL + EF Core)]
-        DB --- Outbox[Transactional Outbox]
-    end
-
-    subgraph ForwardFlow [Forward Execution]
-        Saga -->|ExecuteState1| C1[State 1 Consumer]
-        C1 -->|State1Completed| Saga
-        Saga -->|ExecuteState2| C2[State 2 Consumer]
-        C2 -->|State2Completed| Saga
-    end
-
-    subgraph RollbackFlow [Compensating Transactions]
-        C2 -.->|State2Failed| Saga
-        Saga -->|UndoState1| U1[Undo State 1 Consumer]
-        U1 -->|State1Undone| Saga
-        Saga -->|Transition| FailedState[Failed State]
-    end
-
-    subgraph Alerting [Terminal Faults]
-        U1 -.->|Retry Exhausted| Fault[Fault Consumer]
-        Fault -->|Critical Alert| Ops[DevOps / PagerDuty]
-    end
-``` 
+<div align="center">
+    <img width="4063" height="2952" alt="masstransit-saga-workflow" src="https://github.com/user-attachments/assets/a998d1cc-7f10-427c-8255-650c6cbf8e90" />
+</div>
 
 ### 🛠️ Technical Decisions   
 
