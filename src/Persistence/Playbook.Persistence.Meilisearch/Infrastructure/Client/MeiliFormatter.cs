@@ -42,6 +42,6 @@ public static class MeiliFormatter
         IFormattable f => f.ToString(null, CultureInfo.InvariantCulture),
 
         // Default fallback for any other types.
-        _ => value.ToString()?.ToLowerInvariant() ?? "null"
+        _ => $"\"{value.ToString()?.Replace("\"", "\\\"")}\""
     };
 }

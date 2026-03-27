@@ -39,8 +39,8 @@ public class MeiliRepository<T>(
         var searchQuery = descriptor.Build();
         var index = _context.GetIndex();
 
-        // Perform the search. ConfigureAwait(false) is used to optimize performance in non-UI contexts.
-        var result = await index.SearchAsync<T>(query, searchQuery, cancellationToken: ct).ConfigureAwait(false);
+        // ✅ Pass null as the first arg — the search term is already in searchQuery.Q
+        var result = await index.SearchAsync<T>(null, searchQuery, cancellationToken: ct).ConfigureAwait(false);
 
         return MapToResponse(result);
     }
@@ -93,6 +93,10 @@ public class MeiliRepository<T>(
             totalCount = finiteResult.EstimatedTotalHits;
             limit = finiteResult.Limit;
             offset = finiteResult.Offset;
+        }
+        else
+        {
+            // Log or handle unexpected result
         }
 
         return new SearchResponse<T>(

@@ -27,6 +27,13 @@ public abstract class MeiliIndexConfiguration<T> : IMeiliIndexConfiguration wher
     public virtual Dictionary<string, IEnumerable<string>>? GetSynonyms() => null;
 
     /// <summary>
+    /// Override to supply custom Meilisearch ranking rules.
+    /// Return null to keep the Meilisearch defaults.
+    /// See: https://www.meilisearch.com/docs/learn/relevancy/ranking_rules
+    /// </summary>
+    public virtual IEnumerable<string>? GetRankingRules() => null;
+
+    /// <summary>
     /// Automatically configures the Meilisearch index by scanning the properties of <typeparamref name="T"/> 
     /// for search-specific metadata and applying them to the engine.
     /// </summary>
@@ -63,5 +70,9 @@ public abstract class MeiliIndexConfiguration<T> : IMeiliIndexConfiguration wher
             // Applies custom synonyms to improve search relevance for domain-specific terminology.
             await index.UpdateSynonymsAsync(synonyms, ct).ConfigureAwait(false);
         }
+
+        var rankingRules = GetRankingRules();
+        if (rankingRules is not null)
+            await index.UpdateRankingRulesAsync(rankingRules, ct).ConfigureAwait(false);
     }
 }

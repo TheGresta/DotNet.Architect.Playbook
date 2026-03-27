@@ -56,9 +56,10 @@ graph TD
 ### 🧪 Execution Steps
 
 1. **Initialize:** `dotnet build`
-2. **Execute:** `dotnet run --project Playbook.Persistence.Meilisearch`
-3. **Synchronize Settings:** Send an empty `POST` request to `http://localhost:5000/setup` to push the `CarDocument` configuration to the engine.
-4. **Observe:** Send a `POST` request to `http://localhost:5000/search` with a JSON payload matching the `SearchCarsRequest` structure. Check your console to see the source-generated `SearchLogger` outputting the execution time and hit count.
+2. **Start Meilisearch:** `docker compose up -d meilisearch`
+3. **Execute:** `dotnet run --project Playbook.Persistence.Meilisearch`
+4. **Synchronize Settings:** Send an empty `POST` request to `http://localhost:5000/setup` to push the `CarDocument` configuration to the engine.
+5. **Observe:** Send a `POST` request to `http://localhost:5000/search` with a JSON payload matching the `SearchCarsRequest` structure. Check your console to see the source-generated `SearchLogger` outputting the execution time and hit count.
 
 ## ⚖️ 5. Trade-offs & Analysis
 

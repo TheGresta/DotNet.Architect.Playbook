@@ -45,8 +45,16 @@ public static class ServiceRegistration
         var configurations = assembly.GetTypes()
             .Where(t => typeof(IMeiliIndexConfiguration).IsAssignableFrom(t) && !t.IsAbstract);
 
+        var indexNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var cnf in configurations)
         {
+            // Instantiate temporarily to check IndexName uniqueness
+            if (Activator.CreateInstance(cnf) is IMeiliIndexConfiguration instance)
+            {
+                if (!indexNames.Add(instance.IndexName))
+                    throw new InvalidOperationException($"Duplicate IMeiliIndexConfiguration detected for index '{instance.IndexName}'.");
+            }
             // Registers each configuration under the common interface to be resolved as an IEnumerable 
             // by the MeiliContext constructor.
             services.AddSingleton(typeof(IMeiliIndexConfiguration), cnf);
