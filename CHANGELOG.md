@@ -1,3 +1,16 @@
+# [1.10.0](https://github.com/TheGresta/DotNet.Architect.Playbook/compare/v1.9.0...v1.10.0) (2026-03-27)
+
+
+### Bug Fixes
+
+* **meilisearch:** [Issue [#40](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/40)] ai sggestion fixes ([55c41c1](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/55c41c102ef6d2a7b767dbd304cb3268eea3ca40))
+* **meilisearch:** [Issue [#40](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/40)] ai suggestion fixes 2 ([7eed2b0](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/7eed2b00ee029f85a094ebda101fc2ccd45c9e5b))
+
+
+### Features
+
+* **meilisearch:** [Issue [#40](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/40)] initial meilisearch system ([301fb89](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/301fb89d1e71f21a03cf800e3419dd020185ca8f))
+
 # [1.9.0](https://github.com/TheGresta/DotNet.Architect.Playbook/compare/v1.8.0...v1.9.0) (2026-03-26)
 
 
