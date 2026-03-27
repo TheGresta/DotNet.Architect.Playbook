@@ -1,0 +1,79 @@
+@Host = http://localhost:5147
+@ContentType = application/json
+
+### 1. Initialize Meilisearch Settings
+# This syncs our Type-Safe Filterable and Sortable attributes defined in MeiliConstants.
+POST {{Host}}/setup
+Content-Type: {{ContentType}}
+
+###
+
+### 2. Basic Search-as-you-type (Search Term Only)
+# Testing the sub-20ms latency for a raw text query.
+POST {{Host}}/search
+Content-Type: {{ContentType}}
+
+{
+  "searchTerm": "Ferrari",
+  "limit": 5
+}
+
+###
+
+### 3. Advanced Faceted Filtering (Company + Price Range)
+# Testing our "Business-Logic" filtering without magic strings.
+POST {{Host}}/search
+Content-Type: {{ContentType}}
+
+{
+  "searchTerm": "SF90",
+  "company": "FERRARI",
+  "minPrice": 500000,
+  "maxPrice": 1500000,
+  "limit": 10
+}
+
+###
+
+### 4. Filter by Fuel Type
+# Testing categorical discovery.
+POST {{Host}}/search
+Content-Type: {{ContentType}}
+
+{
+  "fuelType": "plug in hybrid",
+  "limit": 5,
+  "offset": 0
+}
+
+###
+
+### 5. High-Performance Pagination
+# Testing offset-based scrolling through the 1M+ car listings.
+POST {{Host}}/search
+Content-Type: {{ContentType}}
+
+{
+  "searchTerm": "V8",
+  "limit": 20,
+  "offset": 100
+}
+
+### Test Partial Search (Search-as-you-type)
+# Typing "Fer" should return "Ferrari" matches immediately.
+POST {{Host}}/search
+Content-Type: application/json
+
+{
+  "searchTerm": "Fer",
+  "limit": 3
+}
+
+### Test Synonym Fix (Typo Resilience)
+# Searching for the correct word "hybrid" should now find the "hyrbrid" records.
+POST {{Host}}/search
+Content-Type: application/json
+
+{
+  "searchTerm": "hybrid"
+}
