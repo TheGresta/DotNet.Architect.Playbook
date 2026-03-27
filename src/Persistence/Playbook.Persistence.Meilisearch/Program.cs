@@ -12,35 +12,41 @@ builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-// Add Infrastructure Layer
+// Registers the Meilisearch Client, Context, and automatic index configurations.
+// Uses the source-generated MeiliJsonContext for zero-reflection serialization.
 builder.Services.AddMeiliPersistence(builder.Configuration);
 
-// Register Feature Handlers
+// Feature Handlers and Observability
 builder.Services.AddScoped<SearchCarsHandler>();
 builder.Services.AddSingleton<SearchLogger>();
 
 var app = builder.Build();
 
-// Performance-First Search Endpoint
+// 2. High-Performance Search Endpoint
+// Utilizing Minimal APIs for lower overhead and direct integration with the SearchCarsHandler.
 app.MapPost("/search", async (
     SearchCarsRequest request,
     SearchCarsHandler handler,
     SearchLogger logger,
     CancellationToken ct) =>
 {
+    // Start timing the request for performance telemetry.
     var sw = Stopwatch.StartNew();
 
+    // The handler encapsulates the ICarDocumentRepository and CarSearchSpecs logic.
     var results = await handler.HandleAsync(request, ct);
 
     sw.Stop();
 
-    // Use the Source-Generated Logger for zero-allocation performance
+    // Leverage the partial class SearchLogger with [LoggerMessage] for non-allocating logs.
     logger.LogSearchPerformance(request.SearchTerm, sw.ElapsedMilliseconds, results.TotalCount);
 
     return Results.Ok(results);
 });
 
-// Admin endpoint to sync settings
+// 3. Administrative / DevOps Endpoint
+// Trigger this endpoint after deployment to synchronize MeiliFilterable and MeiliSortable 
+// attributes from C# records to the Meilisearch engine settings.
 app.MapPost("/setup", async (MeiliContext context) =>
 {
     await context.InitializeSettingsAsync();
