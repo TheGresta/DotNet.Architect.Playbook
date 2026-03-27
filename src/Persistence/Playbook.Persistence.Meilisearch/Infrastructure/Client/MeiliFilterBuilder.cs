@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Playbook.Persistence.Meilisearch.Infrastructure.Client;
@@ -71,6 +72,21 @@ public sealed class MeiliFilterBuilder<T>
     }
 
     /// <summary>
+    /// Adds a less-than-or-equal-to (<=) comparison filter for numeric or comparable types.
+    /// </summary>
+    /// <typeparam name="TValue">The value type being compared.</typeparam>
+    /// <param name="propertySelector">An expression identifying the property.</param>
+    /// <param name="value">The threshold value.</param>
+    /// <returns>The current <see cref="MeiliFilterBuilder{T}"/> instance for method chaining.</returns>
+    public MeiliFilterBuilder<T> WhereLessThanOrEqual<TValue>(Expression<Func<T, TValue>> propertySelector, TValue? value)
+        where TValue : struct, IComparable
+    {
+        if (!value.HasValue) return this;
+        _filters.Add($"{GetCachedPropertyName(propertySelector)} <= {MeiliFormatter.Format(value.Value)}");
+        return this;
+    }
+
+    /// <summary>
     /// Initiates a nested logical OR grouping.
     /// </summary>
     /// <param name="action">A delegate to configure the nested builder.</param>
@@ -120,7 +136,7 @@ public sealed class MeiliFilterBuilder<T>
         return _propertyCache.GetOrAdd(cacheKey, _ =>
         {
             var attribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>();
-            return attribute?.Name ?? memberInfo.Name.ToLowerInvariant();
+            return attribute?.Name ?? JsonNamingPolicy.SnakeCaseLower.ConvertName(memberInfo.Name);
         });
     }
 

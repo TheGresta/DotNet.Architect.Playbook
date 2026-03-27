@@ -1,4 +1,5 @@
 ﻿using Playbook.Persistence.Meilisearch.Core.Models;
+using Playbook.Persistence.Meilisearch.Infrastructure.Client;
 
 namespace Playbook.Persistence.Meilisearch.Infrastructure.Repositories;
 

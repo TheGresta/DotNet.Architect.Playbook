@@ -32,8 +32,10 @@ public static class MeiliFormatter
         bool b => b ? "true" : "false",
 
         // Standardizing date formats to UTC ISO 8601 as required by Meilisearch for correct range filtering.
-        DateTime dt => $"\"{dt:yyyy-MM-ddTHH:mm:ssZ}\"",
-        DateTimeOffset dto => $"\"{dto:yyyy-MM-ddTHH:mm:ssZ}\"",
+        DateTime dt => $"\"{dt.ToUniversalTime():yyyy-MM-ddTHH:mm:ssZ}\"",
+        DateTimeOffset dto => $"\"{dto.ToUniversalTime():yyyy-MM-ddTHH:mm:ssZ}\"",
+
+        Enum e => $"\"{e.ToString().Replace("\"", "\\\"")}\"",
 
         // Handles numeric types (int, double, decimal) using InvariantCulture to ensure 
         // the decimal separator is always a dot (.) regardless of the host system locale.

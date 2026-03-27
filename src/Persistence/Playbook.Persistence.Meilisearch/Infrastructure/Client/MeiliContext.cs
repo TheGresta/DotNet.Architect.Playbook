@@ -5,6 +5,7 @@ using Playbook.Persistence.Meilisearch.Infrastructure.Configuration;
 
 using MeiliIndex = Meilisearch.Index;
 
+namespace Playbook.Persistence.Meilisearch.Infrastructure.Client;
 
 /// <summary>
 /// Provides a high-level architectural wrapper for Meilisearch operations, acting as a specialized 

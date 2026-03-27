@@ -1,4 +1,6 @@
-﻿namespace Playbook.Persistence.Meilisearch.Features.SearchCars;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Playbook.Persistence.Meilisearch.Features.SearchCars;
 
 /// <summary>
 /// A high-performance Data Transfer Object (DTO) used to encapsulate inbound search parameters.
@@ -19,6 +21,6 @@ public record SearchCarsRequest(
     string? FuelType = null,
     decimal? MinPrice = null,
     decimal? MaxPrice = null,
-    int Limit = 20,
-    int Offset = 0
+    [Range(1, 100)] int Limit = 20,
+    [Range(0, int.MaxValue)] int Offset = 0
 );

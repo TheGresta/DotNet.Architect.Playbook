@@ -28,9 +28,10 @@ public static class CarSearchSpecs
         .WithFilters(f => f
             // Applies an exact match filter for the manufacturer if provided.
             .WhereEquals(x => x.Company, req.Company)
-
+            .WhereEquals(x => x.FuelType, req.FuelType)
             // Filters for vehicles above a specific price threshold.
-            .WhereGreaterThanOrEqual(x => x.PriceUsd, req.MinPrice))
+            .WhereGreaterThanOrEqual(x => x.PriceUsd, req.MinPrice)
+            .WhereLessThanOrEqual(x => x.PriceUsd, req.MaxPrice))
 
         // Ensures premium vehicles (highest price) are surfaced first by default.
         .SortByDescending(x => x.PriceUsd)

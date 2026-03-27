@@ -2,6 +2,7 @@
 
 using Meilisearch;
 
+using Playbook.Persistence.Meilisearch.Infrastructure.Client;
 using Playbook.Persistence.Meilisearch.Infrastructure.Configuration;
 using Playbook.Persistence.Meilisearch.Infrastructure.Repositories;
 

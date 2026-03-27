@@ -67,3 +67,4 @@ graph TD
 * ✅ **Strengths:** Exceptional runtime performance due to AOT-ready JSON and cached expression trees. High developer ergonomics with type-safe query builders. Zero manual schema drift thanks to attribute-based configuration.
 * ❌ **Weaknesses:** Higher initial setup complexity and abstraction overhead compared to calling the raw Meilisearch SDK directly. The automated configuration uses reflection at startup, which adds a slight initialization delay (though it is negligible and cached).
 * 🔄 **Alternatives:** If the application requires complex, heavy-duty log aggregation, vector similarity search, or deep aggregations, Elasticsearch or OpenSearch might be necessary. For highly simple scripting, using the raw `MeilisearchClient` without the Repository/Builder abstractions is perfectly acceptable.
+

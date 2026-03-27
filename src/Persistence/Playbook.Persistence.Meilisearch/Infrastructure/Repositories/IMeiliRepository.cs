@@ -38,7 +38,7 @@ public interface IMeiliRepository<T> where T : class
     Task DeleteAsync(IEnumerable<string> ids, CancellationToken ct = default);
 
     /// <summary>
-    /// Completely clears all documents from the index while preserved the index settings and schema.
+    /// Completely clears all documents from the index while preserving the index settings and schema.
     /// </summary>
     /// <param name="ct">A <see cref="CancellationToken"/> to observe while waiting for the operation.</param>
     /// <returns>A <see cref="Task"/> representing the asynchronous truncation operation.</returns>

@@ -2,6 +2,7 @@ using System.Diagnostics;
 
 using Playbook.Persistence.Meilisearch;
 using Playbook.Persistence.Meilisearch.Features.SearchCars;
+using Playbook.Persistence.Meilisearch.Infrastructure.Client;
 using Playbook.Persistence.Meilisearch.Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
