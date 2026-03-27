@@ -2,7 +2,6 @@ using System.Diagnostics;
 
 using Playbook.Persistence.Meilisearch;
 using Playbook.Persistence.Meilisearch.Features.SearchCars;
-using Playbook.Persistence.Meilisearch.Infrastructure.Client;
 using Playbook.Persistence.Meilisearch.Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,7 +35,7 @@ app.MapPost("/search", async (
     sw.Stop();
 
     // Use the Source-Generated Logger for zero-allocation performance
-    logger.LogSearchPerformance(request.SearchTerm, sw.ElapsedMilliseconds, results.Hits.Count());
+    logger.LogSearchPerformance(request.SearchTerm, sw.ElapsedMilliseconds, results.TotalCount);
 
     return Results.Ok(results);
 });

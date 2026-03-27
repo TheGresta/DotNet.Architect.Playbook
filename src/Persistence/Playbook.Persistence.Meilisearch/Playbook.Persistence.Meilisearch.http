@@ -68,12 +68,3 @@ Content-Type: application/json
   "searchTerm": "Fer",
   "limit": 3
 }
-
-### Test Synonym Fix (Typo Resilience)
-# Searching for the correct word "hybrid" should now find the "hyrbrid" records.
-POST {{Host}}/search
-Content-Type: application/json
-
-{
-  "searchTerm": "hybrid"
-}
