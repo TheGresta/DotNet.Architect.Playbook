@@ -33,6 +33,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Playbook.Messaging.MassTran
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Playbook.Persistence.Meilisearch", "src\Persistence\Playbook.Persistence.Meilisearch\Playbook.Persistence.Meilisearch.csproj", "{8137A451-AD7F-40EC-AA15-828DE2460869}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Playbook.Persistence.HybridCaching", "src\Persistence\Playbook.Persistence.HybridCaching\Playbook.Persistence.HybridCaching.csproj", "{355635A1-C270-43B8-9344-A1CE0C7641B3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -83,6 +85,10 @@ Global
 		{8137A451-AD7F-40EC-AA15-828DE2460869}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8137A451-AD7F-40EC-AA15-828DE2460869}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8137A451-AD7F-40EC-AA15-828DE2460869}.Release|Any CPU.Build.0 = Release|Any CPU
+		{355635A1-C270-43B8-9344-A1CE0C7641B3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{355635A1-C270-43B8-9344-A1CE0C7641B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{355635A1-C270-43B8-9344-A1CE0C7641B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{355635A1-C270-43B8-9344-A1CE0C7641B3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -102,6 +108,7 @@ Global
 		{CEBBCBC4-1DCE-448B-B7C0-88A189C1D496} = {D5F16108-D25F-4E89-8EE2-D148134F1CFC}
 		{51DC47D0-4B18-4023-8044-897B6CABFA04} = {D5F16108-D25F-4E89-8EE2-D148134F1CFC}
 		{8137A451-AD7F-40EC-AA15-828DE2460869} = {B8CE2325-FEDF-4E98-A36F-75A895F6895F}
+		{355635A1-C270-43B8-9344-A1CE0C7641B3} = {B8CE2325-FEDF-4E98-A36F-75A895F6895F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {EA232F1A-641A-407A-B4CE-E71BB7CF7D6B}

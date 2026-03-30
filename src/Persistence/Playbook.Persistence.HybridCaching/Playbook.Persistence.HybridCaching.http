@@ -1,0 +1,20 @@
+@Host = http://localhost:5240
+@ContentType = application/json
+
+GET {{Host}}/benchmark/smart
+Accept: {{ContentType}}
+
+###
+
+GET {{Host}}/benchmark/casual
+Accept: {{ContentType}}
+
+###
+
+POST {{Host}}/benchmark/reload/smart
+Content-Type: {{ContentType}}
+
+###
+
+POST {{Host}}/benchmark/reload/casual
+Content-Type: {{ContentType}}
