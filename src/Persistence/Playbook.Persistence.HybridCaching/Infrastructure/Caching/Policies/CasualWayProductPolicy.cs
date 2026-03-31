@@ -3,6 +3,9 @@ using Playbook.Persistence.HybridCaching.Core.Interfaces;
 
 namespace Playbook.Persistence.HybridCaching.Infrastructure.Caching.Policies;
 
+/// <summary>
+/// Cache policy for individual <see cref="CasualWayProduct"/> entities.
+/// </summary>
 public class CasualWayProductPolicy : ICachePolicy<CasualWayProduct>
 {
     public string Prefix => "casual-way-product";

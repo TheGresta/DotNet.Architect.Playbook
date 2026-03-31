@@ -3,6 +3,9 @@ using Playbook.Persistence.HybridCaching.Core.Interfaces;
 
 namespace Playbook.Persistence.HybridCaching.Infrastructure.Caching.Policies;
 
+/// <summary>
+/// Cache policy for standard <see cref="Product"/> collections.
+/// </summary>
 public class ProductListPolicy : ICachePolicy<List<Product>>
 {
     public string Prefix => "product";

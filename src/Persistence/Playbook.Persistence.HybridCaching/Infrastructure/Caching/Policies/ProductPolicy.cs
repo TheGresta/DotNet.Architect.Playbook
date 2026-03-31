@@ -3,6 +3,9 @@ using Playbook.Persistence.HybridCaching.Core.Interfaces;
 
 namespace Playbook.Persistence.HybridCaching.Infrastructure.Caching.Policies;
 
+/// <summary>
+/// Cache policy for individual <see cref="Product"/> entities.
+/// </summary>
 public class ProductPolicy : ICachePolicy<Product>
 {
     public string Prefix => "product";
