@@ -59,7 +59,12 @@ public sealed class SmartTechSerializer<T> : IHybridCacheSerializer<T>
             return Serializer.Deserialize<T>(decompressionStream);
         }
 
-        return Serializer.Deserialize<T>(ms);
+        if (firstByte == _rawFlag)
+        {
+            return Serializer.Deserialize<T>(ms);
+        }
+
+        throw new InvalidDataException($"Unknown cache payload header: 0x{firstByte:X2}.");
     }
 
     /// <summary>

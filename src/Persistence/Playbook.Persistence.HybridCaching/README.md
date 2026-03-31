@@ -12,7 +12,7 @@
 > [!NOTE]  
 > **The Problem:** High-traffic APIs fetching large collections suffer from severe memory pressure, high CPU overhead during serialization, and excessive network latency when communicating with distributed L2 caches (like Redis). Standard text-based serialization (JSON) and naive single-layer caching strategies easily buckle under heavy concurrent load, leading to cache stampedes and out-of-memory (OOM) exceptions.
 > 
-> **The Solution:** A specialized, high-performance L1/L2 caching architecture built on .NET 8's `HybridCache`. It integrates deterministic binary serialization (Protobuf) with a dynamic, size-aware Brotli compression pipeline (`SmartTechSerializer<T>`). Payloads exceeding 50KB are compressed on-the-fly, drastically reducing Redis network I/O and storage footprint, while type-specific cache policies (`ICachePolicy<T>`) enforce granular TTLs and tag-based invalidation boundaries.
+> **The Solution:** A specialized, high-performance L1/L2 caching architecture built on .NET 10's `HybridCache`. It integrates deterministic binary serialization (Protobuf) with a dynamic, size-aware Brotli compression pipeline (`SmartTechSerializer<T>`). Payloads exceeding 50KB are compressed on-the-fly, drastically reducing Redis network I/O and storage footprint, while type-specific cache policies (`ICachePolicy<T>`) enforce granular TTLs and tag-based invalidation boundaries.
 
 ---
     

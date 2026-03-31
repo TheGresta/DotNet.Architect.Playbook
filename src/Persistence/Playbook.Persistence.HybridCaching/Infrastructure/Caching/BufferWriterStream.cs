@@ -20,6 +20,12 @@ internal sealed class BufferWriterStream(IBufferWriter<byte> writer) : Stream
     /// <param name="count">The number of bytes to be written to the current stream.</param>
     public override void Write(byte[] buffer, int offset, int count) => writer.Write(buffer.AsSpan(offset, count));
 
+    public override void Write(ReadOnlySpan<byte> buffer)
+    {
+        writer.Write(buffer);
+        Position += buffer.Length;
+    }
+
     /// <summary>
     /// Gets a value indicating whether the current stream supports reading.
     /// Always returns <see langword="false"/>.
