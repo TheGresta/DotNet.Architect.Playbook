@@ -1,3 +1,15 @@
+# [1.11.0](https://github.com/TheGresta/DotNet.Architect.Playbook/compare/v1.10.0...v1.11.0) (2026-03-31)
+
+
+### Bug Fixes
+
+* **hybridcache:** [Issue [#42](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/42)] ai suggestions ([50b995c](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/50b995c19fd8cfb827576e539b65425b2af1a3c6))
+
+
+### Features
+
+* **hubridcache:** [Issue [#42](https://github.com/TheGresta/DotNet.Architect.Playbook/issues/42)] initial hybrid cache system ([a3b0923](https://github.com/TheGresta/DotNet.Architect.Playbook/commit/a3b0923c8a3daa1fb7efc250c1d36acc5b72e764))
+
 # [1.10.0](https://github.com/TheGresta/DotNet.Architect.Playbook/compare/v1.9.0...v1.10.0) (2026-03-27)
 
 
