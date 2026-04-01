@@ -1,4 +1,4 @@
-﻿namespace Playbook.Security.IdP.Domain.Models;
+﻿namespace Playbook.Security.IdP.Domain.ServiceModels;
 
 public record PolicyEvaluationResult
 {

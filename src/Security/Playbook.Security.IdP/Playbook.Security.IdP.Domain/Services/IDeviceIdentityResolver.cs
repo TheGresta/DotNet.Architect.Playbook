@@ -1,4 +1,4 @@
-﻿using Playbook.Security.IdP.Domain.Models;
+﻿using Playbook.Security.IdP.Domain.ServiceModels;
 using Playbook.Security.IdP.Domain.ValueObjects;
 
 namespace Playbook.Security.IdP.Domain.Services;

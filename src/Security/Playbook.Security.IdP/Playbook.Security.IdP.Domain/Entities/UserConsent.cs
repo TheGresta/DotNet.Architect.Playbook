@@ -1,20 +1,18 @@
 ﻿using Playbook.Security.IdP.Domain.Entities.Base;
+using Playbook.Security.IdP.Domain.Entities.Ids;
 using Playbook.Security.IdP.Domain.Events;
+using Playbook.Security.IdP.Domain.Exceptions;
 using Playbook.Security.IdP.Domain.ValueObjects;
-using Playbook.Security.IdP.Domain.ValueObjects.Ids;
 
 namespace Playbook.Security.IdP.Domain.Entities;
 
-/// <summary>
-/// Represents a user's explicit permission for a specific Client (Application) 
-/// to access a defined set of Scopes.
-/// </summary>
 public sealed class UserConsent : AuditableEntity<UserConsentId>
 {
+    // --- Identity ---
     public UserId UserId { get; private set; }
-    public string ClientId { get; private set; } // The OIDC Client ID
+    public ClientId ClientId { get; private set; } // Now a Value Object
 
-    // We store scopes as a Value Object to handle validation and normalization
+    // --- State & Lifecycle ---
     private readonly List<ConsentScope> _scopes = new();
     public IReadOnlyCollection<ConsentScope> Scopes => _scopes.AsReadOnly();
 
@@ -23,12 +21,13 @@ public sealed class UserConsent : AuditableEntity<UserConsentId>
 
     public enum ConsentStatus { Active, Revoked, Superseded }
 
+    // Required for ORM
     private UserConsent() { }
 
     private UserConsent(
         UserConsentId id,
         UserId userId,
-        string clientId,
+        ClientId clientId,
         IEnumerable<string> scopeNames,
         DateTime? expiresAt)
     {
@@ -37,17 +36,18 @@ public sealed class UserConsent : AuditableEntity<UserConsentId>
         ClientId = clientId;
         ExpiresAt = expiresAt;
         Status = ConsentStatus.Active;
+        IsActive = true;
 
-        foreach (var name in scopeNames)
+        foreach (var name in scopeNames.Distinct())
         {
             _scopes.Add(new ConsentScope(name));
         }
 
-        AddDomainEvent(new UserConsentGrantedEvent(UserId, ClientId, scopeNames.ToList()));
+        AddDomainEvent(new UserConsentGrantedEvent(UserId, ClientId.Value, scopeNames.ToList()));
     }
 
     /// <summary>
-    /// Factory for creating or updating a grant.
+    /// Gold Standard Factory.
     /// </summary>
     public static UserConsent Create(
         UserId userId,
@@ -55,24 +55,64 @@ public sealed class UserConsent : AuditableEntity<UserConsentId>
         IEnumerable<string> scopes,
         TimeSpan? duration = null)
     {
+        if (!scopes.Any())
+            throw new DomainException("At least one scope must be granted.", "EMPTY_SCOPES");
+
+        var client = ClientId.Create(clientId);
         var expiry = duration.HasValue ? DateTime.UtcNow.Add(duration.Value) : (DateTime?)null;
-        return new UserConsent(UserConsentId.New(), userId, clientId, scopes, expiry);
+
+        return new UserConsent(UserConsentId.New(), userId, client, scopes, expiry);
     }
 
     // --- Domain Behaviors ---
 
     public void Revoke()
     {
+        if (Status == ConsentStatus.Revoked) return;
+
         Status = ConsentStatus.Revoked;
+        IsActive = false;
         UpdatedAt = DateTime.UtcNow;
-        AddDomainEvent(new UserConsentRevokedEvent(UserId, ClientId));
+
+        AddDomainEvent(new UserConsentRevokedEvent(UserId, ClientId.Value));
     }
 
     /// <summary>
-    /// Checks if a specific scope is still authorized.
+    /// Updates the consent by adding new scopes. 
+    /// Used when a user grants additional permissions to an existing app.
     /// </summary>
-    public bool HasScope(string scopeName) =>
-        Status == ConsentStatus.Active &&
-        (ExpiresAt == null || ExpiresAt > DateTime.UtcNow) &&
-        _scopes.Any(s => s.Name == scopeName);
+    public void AddScopes(IEnumerable<string> newScopeNames)
+    {
+        EnsureActive();
+
+        foreach (var name in newScopeNames)
+        {
+            if (!_scopes.Any(s => s.Name == name.ToLowerInvariant().Trim()))
+            {
+                _scopes.Add(new ConsentScope(name));
+            }
+        }
+
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    /// <summary>
+    /// Verifies if the consent is still valid and contains the required scope.
+    /// </summary>
+    public bool IsAuthorized(string scopeName)
+    {
+        if (Status != ConsentStatus.Active) return false;
+        if (ExpiresAt.HasValue && ExpiresAt.Value <= DateTime.UtcNow) return false;
+
+        return _scopes.Any(s => s.Name == scopeName.ToLowerInvariant().Trim());
+    }
+
+    private void EnsureActive()
+    {
+        if (Status != ConsentStatus.Active)
+            throw new DomainException($"Consent is currently {Status}.", "CONSENT_NOT_ACTIVE");
+
+        if (ExpiresAt.HasValue && ExpiresAt.Value <= DateTime.UtcNow)
+            throw new DomainException("Consent has expired.", "CONSENT_EXPIRED");
+    }
 }

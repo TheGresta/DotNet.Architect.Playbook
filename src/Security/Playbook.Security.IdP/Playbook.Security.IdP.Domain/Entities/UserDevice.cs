@@ -1,32 +1,35 @@
 ﻿using Playbook.Security.IdP.Domain.Entities.Base;
+using Playbook.Security.IdP.Domain.Entities.Ids;
 using Playbook.Security.IdP.Domain.Events;
+using Playbook.Security.IdP.Domain.Exceptions;
 using Playbook.Security.IdP.Domain.ValueObjects;
-using Playbook.Security.IdP.Domain.ValueObjects.Ids;
 
 namespace Playbook.Security.IdP.Domain.Entities;
 
 public sealed class UserDevice : AuditableEntity<DeviceId>
 {
-    // --- Properties with Private Setters (Encapsulation) ---
+    // --- Identity & Hardware ---
     public UserId UserId { get; private set; }
     public DeviceIdentity Identity { get; private set; }
-    public bool IsTrusted { get; private set; }
-    public DateTime LastUsedAt { get; private set; }
-    public string LastIpAddress { get; private set; }
     public DeviceMetadata Metadata { get; private set; }
 
-    // Risk Scoring for Adaptive Auth
-    public int FailureCount { get; private set; }
+    // --- State ---
+    public bool IsTrusted { get; private set; }
     public bool IsSuspended { get; private set; }
+    public DateTime LastUsedAt { get; private set; }
+    public IpAddress LastIpAddress { get; private set; } // Now a Value Object
 
-    // --- Constructor & Factory ---
-    private UserDevice() { } // Required for ORM
+    // Risk Metrics
+    public int FailureCount { get; private set; }
+
+    // Required for ORM
+    private UserDevice() { }
 
     private UserDevice(
         DeviceId id,
         UserId userId,
         DeviceIdentity identity,
-        string ipAddress,
+        IpAddress ipAddress,
         DeviceMetadata metadata)
     {
         Id = id;
@@ -34,16 +37,17 @@ public sealed class UserDevice : AuditableEntity<DeviceId>
         Identity = identity;
         LastIpAddress = ipAddress;
         Metadata = metadata;
+
         LastUsedAt = DateTime.UtcNow;
         IsTrusted = false;
+        IsSuspended = false;
         IsActive = true;
 
-        // Notify system a new hardware profile is being registered
         AddDomainEvent(new DeviceRegisteredEvent(UserId, Id, Identity));
     }
 
     /// <summary>
-    /// Factory method ensuring all required invariants for a new device are met.
+    /// Gold Standard Factory.
     /// </summary>
     public static UserDevice Create(
         UserId userId,
@@ -51,52 +55,76 @@ public sealed class UserDevice : AuditableEntity<DeviceId>
         string ipAddress,
         DeviceMetadata metadata)
     {
-        // Validation logic can live here or in the ValueObjects
-        ArgumentNullException.ThrowIfNull(userId);
-        ArgumentNullException.ThrowIfNull(identity);
+        // Validation handled by the IP Value Object
+        var validatedIp = IpAddress.Create(ipAddress);
 
-        return new UserDevice(DeviceId.New(), userId, identity, ipAddress, metadata);
+        return new UserDevice(
+            DeviceId.New(),
+            userId,
+            identity,
+            validatedIp,
+            metadata);
     }
 
-    // --- Domain Behaviors (The "Gold" Logic) ---
+    // --- Domain Behaviors ---
 
-    /// <summary>
-    /// Transitions the device to a trusted state after successful MFA.
-    /// </summary>
     public void MarkAsTrusted(string reason)
     {
-        if (IsSuspended)
-            throw new DomainException("Cannot trust a suspended device.");
+        EnsureActive();
 
         IsTrusted = true;
-        FailureCount = 0; // Reset risk metrics
+        FailureCount = 0;
         UpdatedAt = DateTime.UtcNow;
 
         AddDomainEvent(new DeviceTrustElevatedEvent(Id, UserId, reason));
     }
 
-    /// <summary>
-    /// Records device activity and performs basic anomaly detection.
-    /// </summary>
-    public void RecordUsage(string ipAddress)
+    public void RecordUsage(string newIp)
     {
-        // If IP changes drastically, we could trigger a specific event
-        if (LastIpAddress != ipAddress)
+        EnsureActive();
+
+        var validatedIp = IpAddress.Create(newIp);
+
+        // Security check: If IP changes, notify the system for risk analysis
+        if (LastIpAddress != validatedIp)
         {
-            AddDomainEvent(new DeviceLocationChangedEvent(Id, LastIpAddress, ipAddress));
+            AddDomainEvent(new DeviceLocationChangedEvent(Id, LastIpAddress.Value, validatedIp.Value));
         }
 
-        LastIpAddress = ipAddress;
+        LastIpAddress = validatedIp;
         LastUsedAt = DateTime.UtcNow;
     }
 
-    /// <summary>
-    /// Suspends device access due to suspicious activity (e.g., too many MFA failures).
-    /// </summary>
+    public void RecordFailure()
+    {
+        FailureCount++;
+
+        if (FailureCount >= 3)
+        {
+            Suspend("Too many consecutive verification failures.");
+        }
+    }
+
     public void Suspend(string reason)
     {
+        if (IsSuspended) return;
+
         IsSuspended = true;
         IsTrusted = false;
+        UpdatedAt = DateTime.UtcNow;
+
         AddDomainEvent(new DeviceSuspendedEvent(Id, UserId, reason));
+    }
+
+    /// <summary>
+    /// Guard method to prevent actions on compromised/suspended hardware.
+    /// </summary>
+    private void EnsureActive()
+    {
+        if (IsSuspended)
+            throw new DomainException("This device is suspended and cannot be used.", "DEVICE_SUSPENDED");
+
+        if (!IsActive)
+            throw new DomainException("This device is no longer active.", "DEVICE_INACTIVE");
     }
 }
