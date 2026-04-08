@@ -5,10 +5,15 @@ using Playbook.Persistence.HybridCaching.Core.Interfaces;
 namespace Playbook.Persistence.HybridCaching.Infrastructure.Caching;
 
 /// <summary>
-/// A sealed implementation of <see cref="ICacheProvider"/> that orchestrates communication 
-/// between the <see cref="HybridCache"/>, <see cref="ICacheKeyProvider"/>, and type-specific <see cref="ICachePolicy{T}"/>.
+/// A sealed implementation of <see cref="ICacheProvider"/> that orchestrates communication
+/// between the <see cref="HybridCache"/>, <see cref="ICacheKeyProvider"/>, <see cref="ICacheTagFactory"/>,
+/// and type-specific <see cref="ICachePolicy{T}"/>.
 /// </summary>
-internal sealed class CacheProvider(HybridCache cache, ICacheKeyProvider keyProvider, IServiceProvider serviceProvider) : ICacheProvider
+internal sealed class CacheProvider(
+    HybridCache cache,
+    ICacheKeyProvider keyProvider,
+    ICacheTagFactory tagFactory,
+    IServiceProvider serviceProvider) : ICacheProvider
 {
     /// <summary>
     /// Retrieves or creates a cache entry using a combination of local (L1) and distributed (L2) caching logic.
@@ -27,7 +32,7 @@ internal sealed class CacheProvider(HybridCache cache, ICacheKeyProvider keyProv
         var policy = GetPolicy<T>();
 
         var key = keyProvider.GetKey(policy.Prefix, identifier);
-        var tags = keyProvider.GetTags(policy.Prefix, policy.VendorIds);
+        var tags = tagFactory.Build(policy.Prefix, policy.Tags);
 
         // Map policy-level bypass settings to the HybridCache's internal flag system.
         var flags = policy.BypassMemory ? HybridCacheEntryFlags.DisableLocalCache : HybridCacheEntryFlags.None;
@@ -53,7 +58,7 @@ internal sealed class CacheProvider(HybridCache cache, ICacheKeyProvider keyProv
     {
         var policy = GetPolicy<T>();
 
-        var tags = keyProvider.GetTags(policy.Prefix, policy.VendorIds);
+        var tags = tagFactory.Build(policy.Prefix, policy.Tags);
 
         // Uses tag-based invalidation to clear multiple related keys (e.g., all products for a specific vendor).
         await cache.RemoveByTagAsync(tags, ct);

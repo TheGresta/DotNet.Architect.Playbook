@@ -55,6 +55,7 @@ public static class HybridCachingServiceExtensions
         // Binds the CacheSettings POCO to the configuration and registers providers for key management.
         services.Configure<CacheSettings>(configuration.GetSection("CacheSettings"));
         services.AddSingleton<ICacheKeyProvider, CacheKeyProvider>();
+        services.AddSingleton<ICacheTagFactory, CacheTagFactory>();
         services.AddSingleton<ICacheProvider, CacheProvider>();
 
         // 3. HybridCache & Smart Serializers
