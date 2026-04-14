@@ -62,8 +62,8 @@ public sealed partial class IdempotencyBehavior<TRequest, TResponse>(
         catch (Exception ex)
         {
             // If the handler crashes, we MUST release the reservation so the user can retry.
-            // In a Redis implementation, we would delete the key.
             LogIdempotencyError(logger, ex, requestId);
+            await idempotencyService.ReleaseAsync(requestId);
             throw;
         }
     }

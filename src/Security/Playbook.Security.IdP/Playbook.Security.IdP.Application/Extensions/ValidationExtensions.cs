@@ -5,7 +5,7 @@
 /// with request validation logic. These methods ensure that primitive inputs adhere to the 
 /// internal invariants defined within the domain layer before a request reaches the handler.
 /// </summary>
-public static class ValidationExtensions
+internal static class ValidationExtensions
 {
 
 }

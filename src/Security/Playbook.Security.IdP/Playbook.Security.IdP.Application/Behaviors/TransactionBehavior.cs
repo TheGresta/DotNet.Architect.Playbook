@@ -43,7 +43,7 @@ public sealed partial class TransactionBehavior<TRequest, TResponse>(
             // it will throw an exception and trigger the catch block (Rollback).
             await dispatcher.DispatchEventsAsync(cancellationToken);
 
-            // 3. Final Persistance
+            // 3. Final Persistence
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
             // 4. Seal the deal
@@ -53,10 +53,16 @@ public sealed partial class TransactionBehavior<TRequest, TResponse>(
         }
         catch (Exception ex)
         {
-            // 5. Fatal catch-all: If DB snaps or an Event Handler crashes
-            LogFatal(logger, ex, requestName);
-            await unitOfWork.RollbackTransactionAsync(cancellationToken);
-            throw;
+            try
+            {
+                // 5. Fatal catch-all: If DB snaps or an Event Handler crashes
+                LogFatal(logger, ex, requestName);
+                await unitOfWork.RollbackTransactionAsync(cancellationToken);
+            }
+            catch (Exception rollbackEx)
+            {
+                throw new AggregateException(ex, rollbackEx);
+            }
         }
     }
 

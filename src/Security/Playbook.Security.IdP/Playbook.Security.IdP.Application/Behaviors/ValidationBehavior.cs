@@ -1,6 +1,4 @@
-﻿using System.Reflection;
-
-using ErrorOr;
+﻿using ErrorOr;
 
 using FluentValidation;
 
@@ -45,21 +43,6 @@ public sealed class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidat
             return await next();
         }
 
-        return CreateValidationResult(errors);
-    }
-
-    private static TResponse CreateValidationResult(List<Error> errors)
-    {
-        if (typeof(TResponse).IsGenericType &&
-            typeof(TResponse).GetGenericTypeDefinition() == typeof(ErrorOr<>))
-        {
-            var result = typeof(TResponse)
-                .GetMethod("From", BindingFlags.Public | BindingFlags.Static)
-                ?.Invoke(null, [errors]);
-
-            return (TResponse)result!;
-        }
-
-        throw new InvalidOperationException("Response type must be ErrorOr<T>.");
+        return (dynamic)errors;
     }
 }

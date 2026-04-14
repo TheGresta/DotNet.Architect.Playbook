@@ -72,13 +72,11 @@ public sealed partial class LoggingBehavior<TRequest, TResponse>(
     {
         if (errors is null || errors.Count == 0) return;
 
-        // Map ErrorOr types to structured objects for the log provider
         var errorData = errors.Select(e => new { e.Code, e.Type });
-        var worstType = errors.Max(e => (int)e.Type);
 
-        if (worstType >= (int)ErrorType.Unexpected)
+        if (errors.Any(e => e.Type == ErrorType.Unexpected))
             LogUnexpectedError(logger, requestName, elapsedMs, errorData);
-        else if (worstType == (int)ErrorType.Validation)
+        else if (errors.All(e => e.Type == ErrorType.Validation))
             LogValidationError(logger, requestName, elapsedMs, errorData);
         else
             LogWarningError(logger, requestName, elapsedMs, errorData);

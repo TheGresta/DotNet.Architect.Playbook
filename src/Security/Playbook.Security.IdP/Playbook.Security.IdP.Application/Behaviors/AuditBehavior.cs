@@ -54,12 +54,12 @@ public sealed class AuditBehavior<TRequest, TResponse>(
         {
             // 4. Critical Failure Handling
             // If auditing fails, we log a Critical Error to Grafana/Loki.
-            // In a high-security IdP, you might choose to 'throw' here to block 
-            // the transaction if an audit cannot be guaranteed (Compliance Rule).
             logger.LogCritical(ex,
                 "AUDIT FAILURE: Could not persist audit log for {RequestName}. CorrelationId: {CorrelationId}",
                 typeof(TRequest).Name,
                 requestContext.CorrelationId);
+
+            throw;
         }
 
         return response;
