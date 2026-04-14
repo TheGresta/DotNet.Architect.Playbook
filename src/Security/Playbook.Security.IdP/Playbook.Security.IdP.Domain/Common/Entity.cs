@@ -1,6 +1,4 @@
-﻿using Playbook.Security.IdP.Domain.Common;
-
-namespace Playbook.Security.IdP.Domain.Entities.Base;
+﻿namespace Playbook.Security.IdP.Domain.Common;
 
 /// <summary>
 /// Base abstraction for all domain entities, enforcing strongly-typed identifiers.

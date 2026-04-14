@@ -1,7 +1,5 @@
 ﻿using System.Linq.Expressions;
 
-using Playbook.Security.IdP.Domain.Entities.Base;
-
 namespace Playbook.Security.IdP.Domain.Common;
 
 /// <summary>

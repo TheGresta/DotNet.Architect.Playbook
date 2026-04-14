@@ -1,4 +1,6 @@
-﻿namespace Playbook.Security.IdP.Domain.Entities.Base;
+﻿using Playbook.Security.IdP.Domain.Entities.Ids;
+
+namespace Playbook.Security.IdP.Domain.Common;
 
 /// <summary>
 /// Extends the <see cref="Entity"/> class to provide audit-trail capabilities, 
@@ -15,7 +17,7 @@ public abstract class AuditableEntity<TId> : Entity<TId>
     /// <summary>
     /// Gets or sets the identifier (e.g., username or system ID) of the user who created the entity.
     /// </summary>
-    public string CreatedBy { get; set; } = string.Empty;
+    public UserId CreatedBy { get; set; }
 
     /// <summary>
     /// Gets or sets the date and time, in UTC, when the entity was last modified.
@@ -28,5 +30,17 @@ public abstract class AuditableEntity<TId> : Entity<TId>
     /// <summary>
     /// Gets or sets the identifier of the user who last modified the entity.
     /// </summary>
-    public string? UpdatedBy { get; set; }
+    public UserId? UpdatedBy { get; set; }
+
+    public void SetCreationMetadata(DateTime createdAt, UserId createdBy)
+    {
+        CreatedAt = createdAt;
+        CreatedBy = createdBy;
+    }
+
+    public void SetUpdateMetadata(DateTime updatedAt, UserId updatedBy)
+    {
+        UpdatedAt = updatedAt;
+        UpdatedBy = updatedBy;
+    }
 }

@@ -1,4 +1,4 @@
-﻿using Playbook.Security.IdP.Domain.Entities.Base;
+﻿using Playbook.Security.IdP.Domain.Common;
 using Playbook.Security.IdP.Domain.Entities.Ids;
 using Playbook.Security.IdP.Domain.Events;
 using Playbook.Security.IdP.Domain.Exceptions;
