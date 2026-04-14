@@ -17,6 +17,8 @@ public interface IUnitOfWork
     IQrChallengeRepository QrChallengeRepository { get; }
     IUserConsentRepository UserConsentRepository { get; }
     IUserDeviceRepository UserDeviceRepository { get; }
+    IPermissionRepository PermissionRepository { get; }
+    IRoleRepository RoleRepository { get; }
 
     /// <summary>
     /// Asynchronously persists all changes made in this unit of work to the underlying database.
