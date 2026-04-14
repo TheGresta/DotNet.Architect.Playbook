@@ -7,7 +7,7 @@ namespace Playbook.Security.IdP.Domain.Common;
 /// </summary>
 public abstract record StronglyTypedId<T> where T : notnull
 {
-    public T Value { get; init; }
+    public T Value { get; private init; }
 
     protected StronglyTypedId(T value)
     {

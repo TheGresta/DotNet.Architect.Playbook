@@ -138,6 +138,12 @@ public sealed class User : AuditableEntity<UserId>
         // Do not increment if already locked — prevents counter drift.
         if (IsLockedOut()) return;
 
+        if (LockoutEnd.HasValue && LockoutEnd.Value <= DateTime.UtcNow)
+        {
+            LockoutEnd = null;
+            AccessFailedCount = 0;
+        }
+
         AccessFailedCount++;
 
         if (AccessFailedCount >= MaxFailedAttempts)
@@ -213,6 +219,9 @@ public sealed class User : AuditableEntity<UserId>
 
     public void ConfirmPhone()
     {
+        if (PhoneNumber is null)
+            throw new DomainException("Cannot confirm a phone number before one is set.", "PHONE_NOT_SET");
+
         if (IsPhoneConfirmed) return;
         IsPhoneConfirmed = true;
         UpdatedAt = DateTime.UtcNow;
@@ -222,10 +231,19 @@ public sealed class User : AuditableEntity<UserId>
 
     public void EnableMfa()
     {
+        var hasFactor =
+            !string.IsNullOrWhiteSpace(TotpSecretEncrypted) ||
+            (PhoneNumber is not null && IsPhoneConfirmed) ||
+            _passkeys.Count > 0;
+
+        if (!hasFactor)
+            throw new DomainException("Configure a factor before enabling MFA.", "MFA_FACTOR_REQUIRED");
+
         if (IsTwoFactorEnabled) return;
 
         IsTwoFactorEnabled = true;
         RefreshSecurityStamp();
+        UpdatedAt = DateTime.UtcNow;
 
         AddDomainEvent(new UserMfaEnabledEvent(Id));
     }
@@ -370,7 +388,7 @@ public sealed class User : AuditableEntity<UserId>
 
     public void RevokeRole(RoleId roleId)
     {
-        var role = _roles.FirstOrDefault(r => r.RoleId == roleId)
+        var role = _roles.FirstOrDefault(r => r.RoleId == roleId && !r.IsExpired())
             ?? throw new DomainException("Role assignment not found.", "ROLE_NOT_ASSIGNED");
 
         _roles.Remove(role);

@@ -29,6 +29,8 @@ public sealed class ExternalLogin : Entity<ExternalLoginId>
 
     internal ExternalLogin(UserId userId, string provider, string providerSubjectId, string? providerEmail)
     {
+        ArgumentNullException.ThrowIfNull(userId);
+
         if (string.IsNullOrWhiteSpace(provider))
             throw new DomainException("External login provider cannot be empty.", "INVALID_PROVIDER");
 

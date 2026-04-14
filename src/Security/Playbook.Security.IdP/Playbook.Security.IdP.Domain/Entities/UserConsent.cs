@@ -80,7 +80,7 @@ public sealed class UserConsent : AuditableEntity<UserConsentId>
         foreach (var name in scopeNames.Distinct())
             _scopes.Add(new ConsentScope(name));
 
-        AddDomainEvent(new UserConsentGrantedEvent(UserId, ClientId.Value, _scopes.Select(s => s.Name).ToList()));
+        AddDomainEvent(new UserConsentGrantedEvent(UserId, ClientId.Value, [.. _scopes.Select(s => s.Name)]));
     }
 
     /// <summary>
@@ -163,7 +163,7 @@ public sealed class UserConsent : AuditableEntity<UserConsentId>
     {
         if (Status != ConsentStatus.Active) return false;
         if (ExpiresAt.HasValue && ExpiresAt.Value <= DateTime.UtcNow) return false;
-        if (!string.Equals(RedirectUri, redirectUri.Trim(), StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(RedirectUri, redirectUri.Trim(), StringComparison.Ordinal))
             return false;
 
         return _scopes.Any(s => s.Name == scopeName.ToLowerInvariant().Trim());

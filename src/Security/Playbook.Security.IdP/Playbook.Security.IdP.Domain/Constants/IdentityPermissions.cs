@@ -8,5 +8,5 @@ public static class IdentityPermissions
     public static readonly PermissionCode UserWrite = PermissionCode.Create("idp", "users", "write");
     public static readonly PermissionCode RoleAssign = PermissionCode.Create("idp", "roles", "assign");
 
-    public static IReadOnlyList<PermissionCode> All() => [UserRead, UserWrite, RoleAssign];
+    public static IReadOnlyList<PermissionCode> All => [UserRead, UserWrite, RoleAssign];
 }

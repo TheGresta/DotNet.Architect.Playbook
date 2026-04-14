@@ -136,6 +136,14 @@ public sealed class AuthenticationSession : Entity<AuthenticationSessionId>
         string? codeChallenge = null,
         string? codeChallengeMethod = null)
     {
+        if ((codeChallenge is null) != (codeChallengeMethod is null))
+            throw new DomainException(
+            "code_challenge and code_challenge_method must be provided together.",
+            "INVALID_PKCE_INPUT");
+
+        if (codeChallenge is not null && string.IsNullOrWhiteSpace(codeChallenge))
+            throw new DomainException("code_challenge cannot be empty.", "INVALID_PKCE_INPUT");
+
         if (codeChallengeMethod is not null and not ("S256" or "plain"))
             throw new DomainException(
                 "Only S256 and plain code challenge methods are supported.", "INVALID_PKCE_METHOD");

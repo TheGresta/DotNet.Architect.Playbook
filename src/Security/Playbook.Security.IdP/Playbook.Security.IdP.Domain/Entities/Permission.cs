@@ -52,7 +52,15 @@ public sealed class Permission : Entity<PermissionId>
                 "INVALID_PERMISSION_FORMAT");
 
         Id = id;
-        Name = name.ToLowerInvariant().Trim();
+
+        var trimmedName = name.Trim();
+        var segments = trimmedName.Split(':');
+        if (segments.Length != 3 || segments.Any(string.IsNullOrWhiteSpace))
+            throw new DomainException(
+            "Permission name must follow namespace:resource:action format with non-empty segments.",
+            "INVALID_PERMISSION_FORMAT");
+
+        Name = trimmedName.ToLowerInvariant();
         Description = description?.Trim() ?? string.Empty;
         Effect = effect;
         ResourcePattern = resourcePattern?.Trim();

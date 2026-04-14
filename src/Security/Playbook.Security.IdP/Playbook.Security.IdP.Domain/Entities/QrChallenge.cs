@@ -126,9 +126,12 @@ public sealed class QrChallenge : Entity<QrChallengeId>
         AddDomainEvent(new QrChallengeAuthorizedEvent(Id, AuthorizedBy));
     }
 
-    public void Consume(AuthenticationSessionId sessionId)
+    public void Consume(AuthenticationSessionId sessionId, string plaintextBindingToken)
     {
         EnsureNotExpired();
+
+        if (!ValidateBindingToken(plaintextBindingToken))
+            throw new DomainException("Invalid binding token.", "INVALID_BINDING_TOKEN");
 
         if (Status != ChallengeStatus.Authorized)
             throw new DomainException(

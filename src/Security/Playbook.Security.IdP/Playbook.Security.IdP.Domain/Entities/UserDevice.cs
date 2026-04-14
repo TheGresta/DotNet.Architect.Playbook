@@ -145,8 +145,10 @@ public sealed class UserDevice : AuditableEntity<DeviceId>
         if (LastIpAddress != validatedIp)
             AddDomainEvent(new DeviceLocationChangedEvent(Id, LastIpAddress.Value, validatedIp.Value));
 
+        FailureCount = 0;
         LastIpAddress = validatedIp;
         LastUsedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     public void RecordVerification()

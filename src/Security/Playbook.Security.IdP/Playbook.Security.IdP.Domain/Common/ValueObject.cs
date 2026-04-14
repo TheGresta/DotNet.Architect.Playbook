@@ -23,9 +23,13 @@ public abstract class ValueObject : IEquatable<ValueObject>
 
     public bool Equals(ValueObject? other) => Equals((object?)other);
 
-    public override int GetHashCode() => GetEqualityComponents()
-            .Select(x => x?.GetHashCode() ?? 0)
-            .Aggregate((x, y) => x ^ y);
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        foreach (var component in GetEqualityComponents())
+            hash.Add(component);
+        return hash.ToHashCode();
+    }
 
     public static bool operator ==(ValueObject? left, ValueObject? right)
     {

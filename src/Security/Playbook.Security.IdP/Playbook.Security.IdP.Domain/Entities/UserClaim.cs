@@ -64,7 +64,7 @@ public sealed class UserClaim : Entity<UserClaimId>
 
         Id = UserClaimId.New();
         UserId = userId;
-        Type = type.ToLowerInvariant().Trim();
+        Type = type.Trim();
         Value = value;
         ValueType = valueType;
         Source = source;

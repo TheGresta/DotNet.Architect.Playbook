@@ -30,6 +30,7 @@ public sealed class UserRole : Entity<UserRoleId>
             throw new Exceptions.DomainException(
                 "Role assignment expiry must be in the future.", "INVALID_ROLE_EXPIRY");
 
+        Id = UserRoleId.New();
         UserId = userId;
         RoleId = roleId;
         GrantedBy = grantedBy;
@@ -40,5 +41,5 @@ public sealed class UserRole : Entity<UserRoleId>
     public bool IsExpired() =>
         ExpiresAt.HasValue && ExpiresAt.Value <= DateTime.UtcNow;
 
-    public bool StillActive() => !IsExpired();
+    public bool StillActive() => IsActive && !IsExpired();
 }

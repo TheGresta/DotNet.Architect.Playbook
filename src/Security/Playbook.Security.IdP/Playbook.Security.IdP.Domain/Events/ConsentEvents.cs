@@ -5,6 +5,6 @@ namespace Playbook.Security.IdP.Domain.Events;
 
 // ── Consent Events ────────────────────────────────────────────────────────────
 
-public record UserConsentGrantedEvent(UserId UserId, string ClientId, List<string> Scopes) : DomainEvent;
+public record UserConsentGrantedEvent(UserId UserId, string ClientId, IReadOnlyList<string> Scopes) : DomainEvent;
 public record UserConsentRevokedEvent(UserId UserId, string ClientId) : DomainEvent;
 public record UserConsentSupersededEvent(UserId UserId, string ClientId, UserConsentId NewConsentId) : DomainEvent;

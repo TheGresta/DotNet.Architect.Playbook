@@ -44,6 +44,8 @@ public sealed class UserPasskey : Entity<UserPasskeyId>
         string deviceName,
         bool isBackedUp = false)
     {
+        ArgumentNullException.ThrowIfNull(userId);
+
         if (string.IsNullOrWhiteSpace(credentialId))
             throw new DomainException("Passkey credential ID cannot be empty.", "INVALID_CREDENTIAL_ID");
 
