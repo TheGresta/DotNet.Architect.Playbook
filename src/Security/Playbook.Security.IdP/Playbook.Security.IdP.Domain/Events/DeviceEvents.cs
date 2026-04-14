@@ -4,10 +4,11 @@ using Playbook.Security.IdP.Domain.ValueObjects;
 
 namespace Playbook.Security.IdP.Domain.Events;
 
-public record DeviceRegisteredEvent(UserId UserId, DeviceId DeviceId, DeviceIdentity idendity) : DomainEvent;
+// ── Device Events ─────────────────────────────────────────────────────────────
 
+public record DeviceRegisteredEvent(UserId UserId, DeviceId DeviceId, DeviceIdentity Identity) : DomainEvent;
 public record DeviceTrustElevatedEvent(DeviceId DeviceId, UserId UserId, string Reason) : DomainEvent;
-
-public record DeviceLocationChangedEvent(DeviceId Id, string LastIpAddress, string IpAddress) : DomainEvent;
-
-public record DeviceSuspendedEvent(DeviceId Id, UserId UserId, string Reason) : DomainEvent;
+public record DeviceTrustRevokedEvent(DeviceId DeviceId, UserId UserId, string Reason) : DomainEvent;
+public record DeviceLocationChangedEvent(DeviceId DeviceId, string PreviousIp, string CurrentIp) : DomainEvent;
+public record DeviceSuspendedEvent(DeviceId DeviceId, UserId UserId, string Reason) : DomainEvent;
+public record DeviceUnsuspendedEvent(DeviceId DeviceId, UserId UserId, string Reason) : DomainEvent;

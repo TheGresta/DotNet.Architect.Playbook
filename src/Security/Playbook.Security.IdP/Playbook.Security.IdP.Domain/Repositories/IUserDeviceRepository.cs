@@ -9,4 +9,5 @@ public interface IUserDeviceRepository : IRepository<UserDevice, DeviceId>
 {
     Task<IEnumerable<UserDevice>> GetByUserIdAsync(UserId userId, CancellationToken ct = default);
     Task<UserDevice?> GetByIdentityAsync(UserId userId, DeviceIdentity identity, CancellationToken ct = default);
+    Task<IEnumerable<UserDevice>> GetTrustedDevicesAsync(UserId userId, CancellationToken ct = default);
 }

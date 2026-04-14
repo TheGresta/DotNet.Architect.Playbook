@@ -7,5 +7,5 @@ public record AuthenticationContext(
     DeviceIdentity Identity,
     string IpAddress,
     UserDevice? DetectedDevice,
-    RequestMetadata Metadata
+    DeviceMetadata Metadata
 );

@@ -19,6 +19,11 @@ public interface IUnitOfWork
     IUserDeviceRepository UserDeviceRepository { get; }
     IPermissionRepository PermissionRepository { get; }
     IRoleRepository RoleRepository { get; }
+    IRecoveryCodeRepository RecoveryCodeRepository { get; }
+    IUserClaimRepository UserClaimRepository { get; }
+    IUserPasskeyRepository UserPasskeyRepository { get; }
+    IUserRoleRepository UserRoleRepository { get; }
+    IExternalLoginRepository ExternalLoginRepository { get; }
 
     /// <summary>
     /// Asynchronously persists all changes made in this unit of work to the underlying database.

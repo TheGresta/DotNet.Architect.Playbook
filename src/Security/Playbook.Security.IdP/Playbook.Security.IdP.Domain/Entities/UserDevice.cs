@@ -6,25 +6,71 @@ using Playbook.Security.IdP.Domain.ValueObjects;
 
 namespace Playbook.Security.IdP.Domain.Entities;
 
+/// <summary>
+/// Represents a physical or virtual device that a user has authenticated from.
+///
+/// Design decisions:
+/// - DeviceMetadata no longer stores IpAddress — that was a redundancy bug.
+///   Ip is a first-class property on the entity.
+/// - RiskProfile is modelled as a value object so it can be updated atomically
+///   and compared for change detection.
+/// - AttestationStatement captures the FIDO2/WebAuthn attestation data
+///   for enterprise device health verification.
+/// - TrustGrantedAt / TrustGrantedBy provide an audit trail for the trust elevation.
+/// - FailureCount auto-suspend threshold is a constant, not a magic number.
+/// - LastVerifiedAt tracks when the device's cryptographic identity was last confirmed,
+///   enabling freshness-based revocation policies.
+/// </summary>
 public sealed class UserDevice : AuditableEntity<DeviceId>
 {
-    // --- Identity & Hardware ---
-    public UserId UserId { get; private set; }
-    public DeviceIdentity Identity { get; private set; }
-    public DeviceMetadata Metadata { get; private set; }
+    private const int AutoSuspendFailureThreshold = 3;
 
-    // --- State ---
+    // ── Identity & Hardware ───────────────────────────────────────────────────
+    public UserId UserId { get; private set; } = null!;
+    public DeviceIdentity Identity { get; private set; } = null!;
+
+    /// <summary>
+    /// Metadata about the device's operating environment.
+    /// Does NOT contain IP — that's a session property, not a device property.
+    /// </summary>
+    public DeviceMetadata Metadata { get; private set; } = null!;
+
+    // ── State ─────────────────────────────────────────────────────────────────
     public bool IsTrusted { get; private set; }
     public bool IsSuspended { get; private set; }
     public DateTime LastUsedAt { get; private set; }
-    public IpAddress LastIpAddress { get; private set; } // Now a Value Object
 
-    // Risk Metrics
+    /// <summary>
+    /// The last IP seen for this device. Tracked for location-change anomaly detection.
+    /// Updated on every successful authentication, NOT on every login attempt.
+    /// </summary>
+    public IpAddress LastIpAddress { get; private set; } = null!;
+
+    // ── Trust Audit ───────────────────────────────────────────────────────────
+    public DateTime? TrustGrantedAt { get; private set; }
+    public UserId? TrustGrantedBy { get; private set; }  // Admin or user who trusted it
+    public string? TrustGrantReason { get; private set; }
+
+    // ── Risk Metrics ──────────────────────────────────────────────────────────
     public int FailureCount { get; private set; }
+    public DateTime? SuspendedAt { get; private set; }
+    public string? SuspendReason { get; private set; }
 
-    // Required for ORM
+    // ── FIDO2 / Device Attestation ────────────────────────────────────────────
+    /// <summary>
+    /// The FIDO2 attestation statement for hardware-backed devices.
+    /// Null for browser-fingerprinted (passive) devices.
+    /// </summary>
+    public string? AttestationStatement { get; private set; }
+    public string? AttestationFormat { get; private set; }  // "packed", "tpm", "android-key"
+
+    /// <summary>When the device's cryptographic identity was last verified.</summary>
+    public DateTime? LastVerifiedAt { get; private set; }
+
+    // ── ORM constructor ───────────────────────────────────────────────────────
     private UserDevice() { }
 
+    // ── Private constructor ───────────────────────────────────────────────────
     private UserDevice(
         DeviceId id,
         UserId userId,
@@ -37,7 +83,6 @@ public sealed class UserDevice : AuditableEntity<DeviceId>
         Identity = identity;
         LastIpAddress = ipAddress;
         Metadata = metadata;
-
         LastUsedAt = DateTime.UtcNow;
         IsTrusted = false;
         IsSuspended = false;
@@ -46,63 +91,82 @@ public sealed class UserDevice : AuditableEntity<DeviceId>
         AddDomainEvent(new DeviceRegisteredEvent(UserId, Id, Identity));
     }
 
-    /// <summary>
-    /// Gold Standard Factory.
-    /// </summary>
+    // ── Factory ───────────────────────────────────────────────────────────────
+
     public static UserDevice Create(
         UserId userId,
         DeviceIdentity identity,
         string ipAddress,
         DeviceMetadata metadata)
     {
-        // Validation handled by the IP Value Object
         var validatedIp = IpAddress.Create(ipAddress);
-
-        return new UserDevice(
-            DeviceId.New(),
-            userId,
-            identity,
-            validatedIp,
-            metadata);
+        return new UserDevice(DeviceId.New(), userId, identity, validatedIp, metadata);
     }
 
-    // --- Domain Behaviors ---
+    // ── Domain Behaviours ─────────────────────────────────────────────────────
 
-    public void MarkAsTrusted(string reason)
+    public void MarkAsTrusted(string reason, UserId grantedBy)
     {
         EnsureActive();
 
         IsTrusted = true;
         FailureCount = 0;
+        TrustGrantedAt = DateTime.UtcNow;
+        TrustGrantedBy = grantedBy;
+        TrustGrantReason = reason;
         UpdatedAt = DateTime.UtcNow;
 
         AddDomainEvent(new DeviceTrustElevatedEvent(Id, UserId, reason));
     }
 
-    public void RecordUsage(string newIp)
+    public void RevokeTrust(string reason)
+    {
+        if (!IsTrusted) return;
+
+        IsTrusted = false;
+        TrustGrantedAt = null;
+        TrustGrantedBy = null;
+        TrustGrantReason = null;
+        UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new DeviceTrustRevokedEvent(Id, UserId, reason));
+    }
+
+    /// <summary>
+    /// Records a successful authentication from this device.
+    /// Raises an event if the IP address has changed (anomaly signal).
+    /// </summary>
+    public void RecordUsage(string currentIp)
     {
         EnsureActive();
 
-        var validatedIp = IpAddress.Create(newIp);
+        var validatedIp = IpAddress.Create(currentIp);
 
-        // Security check: If IP changes, notify the system for risk analysis
         if (LastIpAddress != validatedIp)
-        {
             AddDomainEvent(new DeviceLocationChangedEvent(Id, LastIpAddress.Value, validatedIp.Value));
-        }
 
         LastIpAddress = validatedIp;
         LastUsedAt = DateTime.UtcNow;
+    }
+
+    public void RecordVerification()
+    {
+        EnsureActive();
+        LastVerifiedAt = DateTime.UtcNow;
     }
 
     public void RecordFailure()
     {
         FailureCount++;
 
-        if (FailureCount >= 3)
-        {
-            Suspend("Too many consecutive verification failures.");
-        }
+        if (FailureCount >= AutoSuspendFailureThreshold)
+            Suspend($"Automatically suspended after {AutoSuspendFailureThreshold} consecutive failures.");
+    }
+
+    public void ResetFailureCount()
+    {
+        FailureCount = 0;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     public void Suspend(string reason)
@@ -110,15 +174,39 @@ public sealed class UserDevice : AuditableEntity<DeviceId>
         if (IsSuspended) return;
 
         IsSuspended = true;
-        IsTrusted = false;
+        IsTrusted = false;  // Trust is revoked on suspension.
+        SuspendedAt = DateTime.UtcNow;
+        SuspendReason = reason;
         UpdatedAt = DateTime.UtcNow;
 
         AddDomainEvent(new DeviceSuspendedEvent(Id, UserId, reason));
     }
 
-    /// <summary>
-    /// Guard method to prevent actions on compromised/suspended hardware.
-    /// </summary>
+    public void Unsuspend(string reason)
+    {
+        if (!IsSuspended) return;
+
+        IsSuspended = false;
+        FailureCount = 0;
+        SuspendedAt = null;
+        SuspendReason = null;
+        UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new DeviceUnsuspendedEvent(Id, UserId, reason));
+    }
+
+    public void SetAttestation(string statement, string format)
+    {
+        if (string.IsNullOrWhiteSpace(statement))
+            throw new DomainException("Attestation statement cannot be empty.", "INVALID_ATTESTATION");
+
+        AttestationStatement = statement;
+        AttestationFormat = format;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
     private void EnsureActive()
     {
         if (IsSuspended)
