@@ -5,9 +5,11 @@
 /// </summary>
 public interface IAuditableRequest
 {
-    /// <summary>
-    /// Allows the request to specify if it should be audited (defaults to true).
-    /// </summary>
-    bool ShouldAudit => true;
+    // The request defines how it should be described in the logs
+    string GetAuditSummary();
+
+    // The request defines which resource it is touching
+    string ResourceName { get; }
+    string? ResourceId { get; }
 }
 
