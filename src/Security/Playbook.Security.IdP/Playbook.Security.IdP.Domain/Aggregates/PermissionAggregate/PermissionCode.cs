@@ -7,7 +7,7 @@ public record PermissionCode
 
     public static PermissionCode Create(string @namespace, string resource, string action)
     {
-        if (string.IsNullOrWhiteSpace(@namespace)) throw new ArgumentException("Namespace is required.", nameof(`@namespace`));
+        if (string.IsNullOrWhiteSpace(@namespace)) throw new ArgumentException("Namespace is required.", nameof(@namespace));
         if (string.IsNullOrWhiteSpace(resource)) throw new ArgumentException("Resource is required.", nameof(resource));
         if (string.IsNullOrWhiteSpace(action)) throw new ArgumentException("Action is required.", nameof(action));
         if (@namespace.Contains(':') || resource.Contains(':') || action.Contains(':'))

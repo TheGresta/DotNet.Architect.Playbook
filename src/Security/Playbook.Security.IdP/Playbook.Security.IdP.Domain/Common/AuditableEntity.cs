@@ -12,12 +12,12 @@ public abstract class AuditableEntity<TId> : Entity<TId>
     /// <summary>
     /// Gets or sets the date and time, in UTC, when the entity was first persisted.
     /// </summary>
-    public DateTime CreatedAt { get; private set; }
+    public DateTime CreatedAt { get; set; }
 
     /// <summary>
     /// Gets or sets the identifier (e.g., username or system ID) of the user who created the entity.
     /// </summary>
-    public UserId CreatedBy { get; private set; } = null!;
+    public UserId CreatedBy { get; set; } = null!;
 
     /// <summary>
     /// Gets or sets the date and time, in UTC, when the entity was last modified.
@@ -25,12 +25,12 @@ public abstract class AuditableEntity<TId> : Entity<TId>
     /// <value>
     /// A <see cref="Nullable{DateTime}"/> representing the last update timestamp, or <see langword="null"/> if the entity has never been updated.
     /// </value>
-    public DateTime? UpdatedAt { get; private set; }
+    public DateTime? UpdatedAt { get; set; }
 
     /// <summary>
     /// Gets or sets the identifier of the user who last modified the entity.
     /// </summary>
-    public UserId? UpdatedBy { get; private set; }
+    public UserId? UpdatedBy { get; set; }
 
     public void SetCreationMetadata(DateTime createdAt, UserId createdBy)
     {

@@ -12,7 +12,7 @@ public interface IDeviceIdentityResolver
     /// <summary>
     /// Generates a normalized identity string from the provided raw device data.
     /// </summary>
-    /// <param name="rawContext">The raw headers, public keys, or hardware IDs.</param>
+    /// <param name="context">The raw headers, public keys, or hardware IDs.</param>
     /// <returns>A cryptographically secure DeviceIdentity Value Object.</returns>
     DeviceIdentity Resolve(DeviceIdentityContext context);
 }

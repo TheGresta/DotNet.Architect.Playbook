@@ -63,6 +63,8 @@ public sealed partial class TransactionBehavior<TRequest, TResponse>(
             {
                 throw new AggregateException(ex, rollbackEx);
             }
+
+            throw;
         }
     }
 

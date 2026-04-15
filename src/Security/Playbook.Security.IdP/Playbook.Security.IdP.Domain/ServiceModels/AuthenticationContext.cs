@@ -5,7 +5,7 @@ namespace Playbook.Security.IdP.Domain.ServiceModels;
 
 public record AuthenticationContext(
     DeviceIdentity Identity,
-    string IpAddress,
+    IpAddress IpAddress,
     UserDevice? DetectedDevice,
     DeviceMetadata Metadata
 );

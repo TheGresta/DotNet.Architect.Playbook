@@ -38,6 +38,8 @@ public sealed class AuditBehavior<TRequest, TResponse>(
                 action: typeof(TRequest).Name,
                 resourceName: request.ResourceName,
                 resourceId: request.ResourceId,
+                serviceName: string.Empty,
+                enviroment: string.Empty,
                 payload: request.GetAuditSummary(),
                 ipAddress: requestContext.IpAddress,
                 userAgent: requestContext.UserAgent,

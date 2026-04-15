@@ -9,5 +9,5 @@ public interface IQrChallengeRepository : IRepository<QrChallenge, QrChallengeId
     /// <summary>
     /// Finds a challenge using the high-entropy secret code scanned by the mobile app.
     /// </summary>
-    Task<QrChallenge?> GetBySecretCodeAsync(string secretCode, CancellationToken ct = default);
+    Task<QrChallenge?> GetBySecretCodeHashAsync(string secretCodeHash, CancellationToken ct = default);
 }

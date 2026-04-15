@@ -23,4 +23,10 @@ public class DomainException : Exception
         : base(message, innerException)
     {
     }
+
+    public DomainException(string message, string errorCode, Exception innerException)
+       : base(message, innerException)
+    {
+        ErrorCode = errorCode;
+    }
 }

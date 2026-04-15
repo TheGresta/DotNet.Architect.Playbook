@@ -143,7 +143,7 @@ public sealed class UserDevice : AuditableEntity<DeviceId>
         var validatedIp = IpAddress.Create(currentIp);
 
         if (LastIpAddress != validatedIp)
-            AddDomainEvent(new DeviceLocationChangedEvent(Id, LastIpAddress.Value, validatedIp.Value));
+            AddDomainEvent(new DeviceLocationChangedEvent(Id, LastIpAddress, validatedIp));
 
         FailureCount = 0;
         LastIpAddress = validatedIp;

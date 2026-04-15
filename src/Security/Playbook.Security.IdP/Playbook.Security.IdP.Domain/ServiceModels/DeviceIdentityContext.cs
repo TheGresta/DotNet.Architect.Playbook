@@ -1,8 +1,8 @@
 ﻿namespace Playbook.Security.IdP.Domain.ServiceModels;
 
 public record DeviceIdentityContext(
-    string? RawFingerprint,     // Legacy/Passive
-    string? PublicKeyHash,      // Cryptographic/Active (The "Gold" way)
-    string? HardwareId,         // e.g., IMEI or MAC (Mobile specific)
+    string? FingerprintHash,
+    string? PublicKeyHash,
+    string? HardwareIdHash,
     string UserAgent
 );

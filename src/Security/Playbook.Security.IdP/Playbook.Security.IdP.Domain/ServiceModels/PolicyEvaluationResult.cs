@@ -18,6 +18,6 @@ public record PolicyEvaluationResult
 
     // Factory methods for clean domain logic
     public static PolicyEvaluationResult Allow() => new() { IsAllowed = true, Requirement = AuthRequirement.None };
-    public static PolicyEvaluationResult Challenge(int score, string reason) =>
-        new() { IsAllowed = false, Requirement = AuthRequirement.MfaRequired, RiskScore = score, Reason = reason };
+    public static PolicyEvaluationResult Challenge(AuthRequirement requirement, int score, string reason) =>
+        new() { IsAllowed = false, Requirement = requirement, RiskScore = score, Reason = reason };
 }

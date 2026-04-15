@@ -14,5 +14,5 @@ public interface IAuthenticationSessionRepository : IRepository<AuthenticationSe
     /// <summary>
     /// Cleans up expired sessions.
     /// </summary>
-    Task RemoveExpiredSessionsAsync(CancellationToken ct = default);
+    Task<int> RemoveExpiredSessionsAsync(CancellationToken ct = default);
 }
