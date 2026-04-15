@@ -11,7 +11,7 @@ namespace Playbook.Security.IdP.Domain.ValueObjects;
 /// </summary>
 public sealed class PhoneNumber : ValueObject
 {
-    private static readonly Regex E164Pattern =
+    private static readonly Regex _e164Pattern =
         new(@"^\+[1-9]\d{6,14}$", RegexOptions.Compiled, TimeSpan.FromMilliseconds(100));
 
     public string Value { get; }
@@ -23,7 +23,7 @@ public sealed class PhoneNumber : ValueObject
 
         var normalized = value.Trim();
 
-        if (!E164Pattern.IsMatch(normalized))
+        if (!_e164Pattern.IsMatch(normalized))
             throw new DomainException(
                 "Phone number must be in E.164 format (e.g., +14155552671).",
                 "INVALID_PHONE_FORMAT");

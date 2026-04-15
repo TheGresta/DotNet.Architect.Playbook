@@ -36,8 +36,6 @@ public interface IUnitOfWork
     /// A <see cref="Task{TResult}"/> representing the asynchronous operation. The task result contains the 
     /// number of state entries written to the database.
     /// </returns>
-    /// <exception cref="DbUpdateException">Thrown if an error occurs while saving to the database.</exception>
-    /// <exception cref="DbUpdateConcurrencyException">Thrown if a concurrency violation is encountered.</exception>
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -70,19 +68,4 @@ public interface IUnitOfWork
     /// <see langword="true"/> if the <see cref="IUnitOfWork"/> has an ongoing transaction; otherwise, <see langword="false"/>.
     /// </value>
     bool HasActiveTransaction { get; }
-
-    /// <summary>
-    /// Clears the change tracker, detaching all currently tracked entities from the context.
-    /// </summary>
-    /// <remarks>
-    /// This is typically used in bulk operations or to recover from a failed save state without 
-    /// disposing of the entire unit of work instance.
-    /// </remarks>
-    void ClearChangeTracker();
-
-    /// <summary>
-    /// Sets the timeout period, in seconds, for commands executed within this unit of work.
-    /// </summary>
-    /// <param name="seconds">The number of seconds to wait before a command times out.</param>
-    void SetCommandTimeout(int seconds);
 }

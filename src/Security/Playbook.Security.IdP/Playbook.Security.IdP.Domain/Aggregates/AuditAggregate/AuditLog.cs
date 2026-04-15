@@ -55,6 +55,16 @@ public sealed class AuditLog
     public AuditSeverity Severity { get; private set; }
     public DateTime OccurredAtUtc { get; private set; }
 
+    // ── Chain Integrity ───────────────────────────────────────────────────────
+    /// <summary>
+    /// HMAC-SHA256 of the previous record in the audit chain, or
+    /// <c>"CHAIN_ORIGIN"</c> for the very first record.
+    /// Including this in the current record's hash binds the records into a
+    /// tamper-evident chain: deletion or reordering of any record breaks the
+    /// chain.
+    /// </summary>
+    public string PreviousHash { get; private set; } = "CHAIN_ORIGIN";
+
     // ── Integrity ─────────────────────────────────────────────────────────────
     /// <summary>
     /// HMAC-SHA256 of canonical fields. Used to detect post-creation tampering.
@@ -70,6 +80,16 @@ public sealed class AuditLog
     /// <summary>
     /// Primary factory. All fields are set at creation and never mutated.
     /// </summary>
+    /// <param name="hmacKey">
+    /// Secret key for HMAC-SHA256, sourced from secure configuration
+    /// (e.g. Azure Key Vault / AWS Secrets Manager). Must not be stored in the
+    /// domain — pass it in from the infrastructure/application layer.
+    /// </param>
+    /// <param name="previousHash">
+    /// The <see cref="TamperHash"/> of the immediately preceding audit record
+    /// for this tenant/service, forming a tamper-evident chain.
+    /// Pass <c>null</c> (or omit) for the very first record.
+    /// </param>
     public static AuditLog Create(
         UserId? actorId,
         string action,
@@ -79,15 +99,21 @@ public sealed class AuditLog
         string ipAddress,
         string? userAgent,
         string correlationId,
+        byte[] hmacKey,
         string serviceName,
-        string enviroment,
+        string environment,
         bool isSuccess = true,
         AuditSeverity severity = AuditSeverity.Info,
+        string? previousHash = null,
         string? geoCountry = null,
         string? geoCity = null,
         double? geoLatitude = null,
         double? geoLongitude = null)
     {
+        ArgumentNullException.ThrowIfNull(hmacKey);
+        if (hmacKey.Length == 0)
+            throw new ArgumentException("HMAC key must not be empty.", nameof(hmacKey));
+
         var log = new AuditLog
         {
             Id = Guid.NewGuid(),
@@ -100,44 +126,48 @@ public sealed class AuditLog
             UserAgent = userAgent,
             CorrelationId = correlationId,
             IsSuccess = isSuccess,
-            Severity = !isSuccess && severity == AuditSeverity.Info
-                ? AuditSeverity.Warning
-                : severity,
+            Severity = isSuccess ? severity : AuditSeverity.Warning,
             OccurredAtUtc = DateTime.UtcNow,
             ServiceName = serviceName,
-            Environment = enviroment,
+            Environment = environment,
             GeoCountry = geoCountry,
             GeoCity = geoCity,
             GeoLatitude = geoLatitude,
-            GeoLongitude = geoLongitude
+            GeoLongitude = geoLongitude,
+            PreviousHash = previousHash ?? "CHAIN_ORIGIN"
         };
 
         // TamperHash is computed last, after all fields are set.
-        // The HMAC key is loaded from configuration in the infrastructure layer
-        // and injected via a factory overload — the domain uses a deterministic
-        // canonical form so any layer can verify it.
-        log.TamperHash = log.ComputeCanonicalHash();
+        log.TamperHash = log.ComputeHmac(hmacKey);
 
         return log;
     }
 
     /// <summary>
-    /// Verifies that the audit record has not been tampered with since creation.
-    /// Returns false if any canonical field has been altered.
+    /// Verifies that this record has not been tampered with since creation.
+    /// Returns <c>false</c> if any canonical field has been altered.
     /// </summary>
-    public bool VerifyIntegrity()
+    /// <param name="hmacKey">
+    /// The same secret key that was used during <see cref="Create"/>.
+    /// </param>
+    public bool VerifyIntegrity(byte[] hmacKey)
     {
-        var expectedHash = ComputeCanonicalHash();
+        ArgumentNullException.ThrowIfNull(hmacKey);
+        var expectedHash = ComputeHmac(hmacKey);
         return string.Equals(TamperHash, expectedHash, StringComparison.OrdinalIgnoreCase);
     }
+
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Produces a deterministic canonical representation of the immutable fields.
-    /// Any field change will produce a different hash.
+    /// Produces a deterministic canonical representation of ALL immutable fields
+    /// (including <see cref="PreviousHash"/> and geo metadata) and signs it with
+    /// HMAC-SHA256 using the supplied key.
+    /// Any field change — even in previously omitted fields — will produce a
+    /// different hash.
     /// </summary>
-    private string ComputeCanonicalHash()
+    private string ComputeHmac(byte[] key)
     {
         var canonical = JsonSerializer.Serialize(new
         {
@@ -147,13 +177,23 @@ public sealed class AuditLog
             ResourceName,
             ResourceId,
             IpAddress,
+            UserAgent,
             CorrelationId,
             IsSuccess,
+            Severity = Severity.ToString(),
             OccurredAtUtc = OccurredAtUtc.ToString("O"),
-            Payload
+            Payload,
+            ServiceName,
+            Environment,
+            GeoCountry,
+            GeoCity,
+            GeoLatitude,
+            GeoLongitude,
+            PreviousHash
         });
 
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(canonical));
-        return Convert.ToHexString(bytes).ToLowerInvariant();
+        var data = Encoding.UTF8.GetBytes(canonical);
+        var hmacBytes = HMACSHA256.HashData(key, data);
+        return Convert.ToHexString(hmacBytes).ToLowerInvariant();
     }
 }

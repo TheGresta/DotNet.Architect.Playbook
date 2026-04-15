@@ -23,9 +23,9 @@ namespace Playbook.Security.IdP.Domain.Entities;
 public sealed class User : AuditableEntity<UserId>
 {
     // ── Constants ───────────────────────────────────────────────────────────
-    private const int MaxFailedAttempts = 5;
-    private const int LockoutDurationMinutes = 15;
-    private const int RecoveryCodeCount = 10;
+    private const int _maxFailedAttempts = 5;
+    private const int _lockoutDurationMinutes = 15;
+    private const int _recoveryCodeCount = 10;
 
     // ── Core Identity ────────────────────────────────────────────────────────
     public Username Username { get; private set; } = null!;
@@ -146,9 +146,9 @@ public sealed class User : AuditableEntity<UserId>
 
         AccessFailedCount++;
 
-        if (AccessFailedCount >= MaxFailedAttempts)
+        if (AccessFailedCount >= _maxFailedAttempts)
         {
-            LockoutEnd = DateTime.UtcNow.AddMinutes(LockoutDurationMinutes);
+            LockoutEnd = DateTime.UtcNow.AddMinutes(_lockoutDurationMinutes);
             AddDomainEvent(new UserLockedOutEvent(Id, LockoutEnd.Value));
         }
     }
@@ -177,8 +177,7 @@ public sealed class User : AuditableEntity<UserId>
     public void UpdatePassword(string plainPassword, IPasswordHasher passwordHasher)
     {
         PasswordHash = passwordHasher.HashPassword(plainPassword);
-        RefreshSecurityStamp();   // Invalidate all existing sessions/tokens.
-        UpdatedAt = DateTime.UtcNow;
+        TouchSecurityBoundary();
 
         AddDomainEvent(new UserPasswordChangedEvent(Id));
     }
@@ -197,13 +196,11 @@ public sealed class User : AuditableEntity<UserId>
     public void ChangeEmail(string newEmail)
     {
         var updated = Email.Create(newEmail);
-
         if (Email == updated) return;
 
         Email = updated;
         IsEmailConfirmed = false;      // Requires re-confirmation.
-        RefreshSecurityStamp();
-        UpdatedAt = DateTime.UtcNow;
+        TouchSecurityBoundary();
 
         AddDomainEvent(new UserEmailChangedEvent(Id, Email.Value));
     }
@@ -214,7 +211,7 @@ public sealed class User : AuditableEntity<UserId>
     {
         PhoneNumber = PhoneNumber.Create(e164Number);
         IsPhoneConfirmed = false;
-        UpdatedAt = DateTime.UtcNow;
+        TouchSecurityBoundary();
     }
 
     public void ConfirmPhone()
@@ -242,8 +239,7 @@ public sealed class User : AuditableEntity<UserId>
         if (IsTwoFactorEnabled) return;
 
         IsTwoFactorEnabled = true;
-        RefreshSecurityStamp();
-        UpdatedAt = DateTime.UtcNow;
+        TouchSecurityBoundary();
 
         AddDomainEvent(new UserMfaEnabledEvent(Id));
     }
@@ -255,7 +251,7 @@ public sealed class User : AuditableEntity<UserId>
         IsTwoFactorEnabled = false;
         TotpSecretEncrypted = null;
         _recoveryCodes.Clear();
-        RefreshSecurityStamp();
+        TouchSecurityBoundary();
 
         AddDomainEvent(new UserMfaDisabledEvent(Id));
     }
@@ -267,7 +263,7 @@ public sealed class User : AuditableEntity<UserId>
             throw new DomainException("TOTP secret cannot be empty.", "INVALID_TOTP_SECRET");
 
         TotpSecretEncrypted = encryptedSecret;
-        UpdatedAt = DateTime.UtcNow;
+        TouchSecurityBoundary();
     }
 
     /// <summary>
@@ -278,7 +274,7 @@ public sealed class User : AuditableEntity<UserId>
     {
         _recoveryCodes.Clear();
 
-        var plaintextCodes = Enumerable.Range(0, RecoveryCodeCount)
+        var plaintextCodes = Enumerable.Range(0, _recoveryCodeCount)
             .Select(_ => GenerateRecoveryCodePlaintext())
             .ToList();
 
@@ -299,16 +295,18 @@ public sealed class User : AuditableEntity<UserId>
     /// Attempts to consume a recovery code. Each code is single-use.
     /// Returns false if the code is invalid or already consumed.
     /// </summary>
-    public bool TryConsumeRecoveryCode(string plaintextCode, IPasswordHasher hasher)
+    public bool TryConsumeRecoveryCode(string plaintextCode, IPasswordHasher hasher, ISystemClock systemClock)
     {
         var match = _recoveryCodes
             .Where(rc => !rc.IsConsumed)
-            .FirstOrDefault(rc => hasher.VerifyPassword(plaintextCode, rc.CodeHash));
+            .FirstOrDefault(rc => hasher.VerifyPassword(plaintextCode, rc.CodeHash).Verified);
 
         if (match is null) return false;
 
-        match.Consume();
-        UpdatedAt = DateTime.UtcNow;
+        var utcNow = systemClock.UtcNow;
+
+        match.Consume(utcNow);
+        UpdatedAt = utcNow.UtcDateTime;
 
         AddDomainEvent(new UserRecoveryCodeConsumedEvent(Id));
 
@@ -328,7 +326,7 @@ public sealed class User : AuditableEntity<UserId>
 
         var passkey = new UserPasskey(Id, credentialId, publicKeyJwk, aaguid, deviceName);
         _passkeys.Add(passkey);
-        UpdatedAt = DateTime.UtcNow;
+        TouchSecurityBoundary();
 
         AddDomainEvent(new UserPasskeyRegisteredEvent(Id, credentialId, deviceName));
     }
@@ -339,22 +337,43 @@ public sealed class User : AuditableEntity<UserId>
             ?? throw new DomainException("Passkey not found.", "PASSKEY_NOT_FOUND");
 
         _passkeys.Remove(passkey);
-        UpdatedAt = DateTime.UtcNow;
+        TouchSecurityBoundary();
 
         AddDomainEvent(new UserPasskeyRemovedEvent(Id, credentialId));
     }
 
     // ── Domain Behaviours: External Logins ───────────────────────────────────
 
-    public void LinkExternalLogin(string provider, string providerSubjectId, string? providerEmail)
+    public void LinkExternalLogin(
+        string provider,
+        string providerSubjectId,
+        string? providerEmail,
+        ISystemClock clock)
     {
-        if (_externalLogins.Any(e => e.Provider == provider && e.ProviderSubjectId == providerSubjectId))
-            throw new DomainException("This external account is already linked.", "EXTERNAL_LOGIN_DUPLICATE");
+        var now = clock.UtcNow;
 
-        _externalLogins.Add(new ExternalLogin(Id, provider, providerSubjectId, providerEmail));
-        UpdatedAt = DateTime.UtcNow;
+        var existing = _externalLogins
+            .FirstOrDefault(e => e.Provider == provider.ToLowerInvariant().Trim()
+                               && e.ProviderSubjectId == providerSubjectId.Trim());
+
+        if (existing is not null)
+            throw new DomainException("External login already linked.", "EXTERNAL_LOGIN_DUPLICATE");
+
+        var login = new ExternalLogin(Id, provider, providerSubjectId, providerEmail, now);
+
+        _externalLogins.Add(login);
+        TouchSecurityBoundary();
 
         AddDomainEvent(new UserExternalLoginLinkedEvent(Id, provider, providerSubjectId));
+    }
+
+    public void RecordUsageForLogin(string provider, string providerSubjectId, ISystemClock clock)
+    {
+        var login = _externalLogins
+            .FirstOrDefault(e => e.Provider == provider && e.ProviderSubjectId == providerSubjectId)
+            ?? throw new DomainException("External login not found.", "EXTERNAL_LOGIN_NOT_FOUND");
+
+        login.RecordUsage(clock.UtcNow);
     }
 
     public void UnlinkExternalLogin(string provider, string providerSubjectId)
@@ -370,7 +389,7 @@ public sealed class User : AuditableEntity<UserId>
                 "LAST_LOGIN_METHOD");
 
         _externalLogins.Remove(login);
-        UpdatedAt = DateTime.UtcNow;
+        TouchSecurityBoundary();
     }
 
     // ── Domain Behaviours: RBAC ───────────────────────────────────────────────
@@ -416,8 +435,7 @@ public sealed class User : AuditableEntity<UserId>
         if (Status == UserStatus.Suspended) return;
 
         Status = UserStatus.Suspended;
-        UpdatedAt = DateTime.UtcNow;
-        RefreshSecurityStamp();
+        TouchSecurityBoundary();
 
         AddDomainEvent(new UserSuspendedEvent(Id, reason));
     }
@@ -448,6 +466,18 @@ public sealed class User : AuditableEntity<UserId>
 
     public bool IsLockedOut() =>
         LockoutEnd.HasValue && LockoutEnd.Value > DateTime.UtcNow;
+
+    /// <summary>
+    /// Atomically rotates <see cref="SecurityStamp"/> and bumps <see cref="AuditableEntity{TId}.UpdatedAt"/>.
+    /// Must be called on every credential or auth-boundary mutation so that token
+    /// validators (JWT SecurityStamp validator / cookie slide) detect the change
+    /// and force re-authentication on all active sessions.
+    /// </summary>
+    private void TouchSecurityBoundary()
+    {
+        SecurityStamp = NewSecurityStamp();
+        UpdatedAt = DateTime.UtcNow;
+    }
 
     private void RefreshSecurityStamp() =>
         SecurityStamp = NewSecurityStamp();

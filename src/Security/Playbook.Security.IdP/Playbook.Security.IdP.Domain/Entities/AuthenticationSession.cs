@@ -25,7 +25,7 @@ namespace Playbook.Security.IdP.Domain.Entities;
 /// </summary>
 public sealed class AuthenticationSession : Entity<AuthenticationSessionId>
 {
-    private const int MaxMfaAttempts = 3;
+    private const int _maxMfaAttempts = 3;
 
     // ── Identity Context ──────────────────────────────────────────────────────
     public UserId UserId { get; private set; } = null!;
@@ -200,7 +200,7 @@ public sealed class AuthenticationSession : Entity<AuthenticationSessionId>
         if (Status != AuthStep.AwaitingMfa)
             throw new DomainException("No active MFA challenge for this session.", "MFA_NOT_ACTIVE");
 
-        if (MfaAttemptCount >= MaxMfaAttempts)
+        if (MfaAttemptCount >= _maxMfaAttempts)
         {
             Terminate("Exceeded maximum MFA attempts.");
             return false;

@@ -88,6 +88,34 @@ public sealed class Role : AuditableEntity<RoleId>
             _conflictsWiths.Add(conflictingRoleId);
     }
 
+    /// <summary>
+    /// Registers a one-directional conflict edge on this role.
+    /// Call via <see cref="RoleConflictService"/> only, which ensures symmetry.
+    /// </summary>
+    internal void RegisterConflict(RoleId conflictingRoleId, DateTimeOffset utcNow)
+    {
+        if (conflictingRoleId == Id)
+            throw new DomainException("A role cannot conflict with itself.", "SELF_CONFLICT");
+
+        if (_conflictsWiths.Contains(conflictingRoleId)) return;
+
+        _conflictsWiths.Add(conflictingRoleId);
+        UpdatedAt = utcNow.UtcDateTime;                         // ← clock injected, not DateTime.UtcNow
+        AddDomainEvent(new RoleConflictAddedEvent(Id, conflictingRoleId));
+    }
+
+    /// <summary>
+    /// Removes a one-directional conflict edge from this role.
+    /// Call via <see cref="RoleConflictService"/> only.
+    /// </summary>
+    internal void DeregisterConflict(RoleId conflictingRoleId, DateTimeOffset utcNow)
+    {
+        if (!_conflictsWiths.Remove(conflictingRoleId)) return;
+
+        UpdatedAt = utcNow.UtcDateTime;
+        AddDomainEvent(new RoleConflictRemovedEvent(Id, conflictingRoleId));
+    }
+
     public void RemoveConflict(RoleId conflictingRoleId) =>
         _conflictsWiths.Remove(conflictingRoleId);
 

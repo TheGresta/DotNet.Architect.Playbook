@@ -16,6 +16,12 @@ public sealed class RecoveryCode : Entity<RecoveryCodeId>
     public bool IsConsumed { get; private set; }
     public DateTime? ConsumedAt { get; private set; }
 
+    /// <summary>
+    /// Optimistic concurrency token. Managed exclusively by EF Core.
+    /// Ensures a stale read is rejected at the DB write boundary.
+    /// </summary>
+    public byte[] RowVersion { get; private set; } = [];
+
     // ORM constructor
     private RecoveryCode() { }
 
@@ -27,12 +33,15 @@ public sealed class RecoveryCode : Entity<RecoveryCodeId>
         IsConsumed = false;
     }
 
-    internal void Consume()
+    /// <param name="utcNow">
+    /// Injected by the command handler via ISystemClock – never call DateTime.UtcNow here.
+    /// </param>
+    internal void Consume(DateTimeOffset utcNow)
     {
         if (IsConsumed)
             throw new DomainException("Recovery code has already been used.", "RECOVERY_CODE_CONSUMED");
 
         IsConsumed = true;
-        ConsumedAt = DateTime.UtcNow;
+        ConsumedAt = utcNow.UtcDateTime;
     }
 }

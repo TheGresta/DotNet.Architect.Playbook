@@ -64,7 +64,7 @@ public sealed class Permission : Entity<PermissionId>
         Description = description?.Trim() ?? string.Empty;
         Effect = effect;
         ResourcePattern = resourcePattern?.Trim();
-        Conditions = conditions;
+        Conditions = conditions?.Trim();
     }
 
     public bool IsDeny => Effect == PermissionEffect.Deny;

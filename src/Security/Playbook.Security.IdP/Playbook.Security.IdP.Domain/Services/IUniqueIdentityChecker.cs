@@ -3,8 +3,14 @@
 namespace Playbook.Security.IdP.Domain.Services;
 
 /// <summary>
-/// Domain service to ensure global uniqueness of identity identifiers.
-/// This prevents race conditions and duplicate account creation.
+/// Advisory-only pre-check for identity identifier uniqueness.
+/// These methods are NOT a security gate and do NOT prevent race conditions (TOCTOU).
+/// They are intended solely for fast UX feedback (e.g., inline form validation).
+///
+/// TRUE uniqueness MUST be enforced at the persistence layer via unique database indexes
+/// (UIX_Users_Email, UIX_Users_Username). Callers must handle write-time conflicts
+/// (DomainException with codes EMAIL_CONFLICT / USERNAME_CONFLICT) on every
+/// create/update operation and must NOT rely solely on these pre-checks for correctness.
 /// </summary>
 public interface IUniqueIdentityChecker
 {

@@ -1,6 +1,7 @@
 ﻿using Playbook.Security.IdP.Domain.Common;
 using Playbook.Security.IdP.Domain.Entities.Ids;
 using Playbook.Security.IdP.Domain.Exceptions;
+using Playbook.Security.IdP.Domain.Services;
 
 namespace Playbook.Security.IdP.Domain.Entities;
 
@@ -21,13 +22,22 @@ public sealed class ExternalLogin : Entity<ExternalLoginId>
     /// <summary>Email as reported by the external provider at link time (informational).</summary>
     public string? ProviderEmail { get; private set; }
 
-    public DateTime LinkedAt { get; private set; }
-    public DateTime? LastUsedAt { get; private set; }
+    public DateTimeOffset LinkedAt { get; private set; }
+    public DateTimeOffset? LastUsedAt { get; private set; }
 
     // ORM constructor
     private ExternalLogin() { }
 
-    internal ExternalLogin(UserId userId, string provider, string providerSubjectId, string? providerEmail)
+    /// <param name="utcNow">
+    ///   Resolved by the caller (application layer) via <see cref="ISystemClock.UtcNow"/>
+    ///   or <see cref="TimeProvider.GetUtcNow()"/>.
+    /// </param>
+    internal ExternalLogin(
+        UserId userId,
+        string provider,
+        string providerSubjectId,
+        string? providerEmail,
+        DateTimeOffset utcNow)
     {
         ArgumentNullException.ThrowIfNull(userId);
 
@@ -43,7 +53,11 @@ public sealed class ExternalLogin : Entity<ExternalLoginId>
         ProviderSubjectId = providerSubjectId.Trim();
         ProviderEmail = providerEmail?.Trim().ToLowerInvariant();
         LinkedAt = DateTime.UtcNow;
+        LinkedAt = utcNow;
     }
 
-    public void RecordUsage() => LastUsedAt = DateTime.UtcNow;
+    /// <param name="utcNow">
+    ///   Resolved by the caller via <see cref="ISystemClock.UtcNow"/>.
+    /// </param>
+    public void RecordUsage(DateTimeOffset utcNow) => LastUsedAt = utcNow;
 }

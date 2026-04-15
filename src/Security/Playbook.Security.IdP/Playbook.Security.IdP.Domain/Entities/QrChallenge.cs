@@ -22,7 +22,7 @@ namespace Playbook.Security.IdP.Domain.Entities;
 /// </summary>
 public sealed class QrChallenge : Entity<QrChallengeId>
 {
-    private static readonly TimeSpan DefaultTtl = TimeSpan.FromSeconds(120);
+    private static readonly TimeSpan _defaultTtl = TimeSpan.FromSeconds(120);
 
     // ── Handshake Metadata ────────────────────────────────────────────────────
     /// <summary>
@@ -104,7 +104,7 @@ public sealed class QrChallenge : Entity<QrChallengeId>
             bindingHash,
             IpAddress.Create(ipAddress),
             metadata,
-            DefaultTtl);
+            _defaultTtl);
 
         return (challenge, plaintextSecret.Value, plaintextBindingToken);
     }

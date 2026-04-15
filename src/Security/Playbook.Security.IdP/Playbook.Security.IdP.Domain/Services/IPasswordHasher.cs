@@ -1,4 +1,5 @@
-﻿using Playbook.Security.IdP.Domain.ValueObjects;
+﻿using Playbook.Security.IdP.Domain.ServiceModels;
+using Playbook.Security.IdP.Domain.ValueObjects;
 
 namespace Playbook.Security.IdP.Domain.Services;
 
@@ -10,7 +11,9 @@ public interface IPasswordHasher
     PasswordHash HashPassword(string password);
 
     /// <summary>
-    /// Accepts the Value Object for verification.
+    /// Verifies <paramref name="password"/> against <paramref name="storedHash"/>.
+    /// Returns a <see cref="PasswordVerificationResult"/> that signals both the
+    /// outcome and whether a transparent rehash should be performed.
     /// </summary>
-    bool VerifyPassword(string password, PasswordHash storedHash);
+    PasswordVerificationResult VerifyPassword(string password, PasswordHash storedHash);
 }

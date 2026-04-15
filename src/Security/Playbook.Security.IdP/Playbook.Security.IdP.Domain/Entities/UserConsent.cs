@@ -128,31 +128,83 @@ public sealed class UserConsent : AuditableEntity<UserConsentId>
         AddDomainEvent(new UserConsentRevokedEvent(UserId, ClientId.Value));
     }
 
-    public void MarkSuperseded(UserConsentId newConsentId)
+    /// <summary>
+    /// Marks this consent as superseded by a newly-created consent record.
+    /// The <paramref name="newConsentId"/> is persisted on this entity so the
+    /// old→new supersession chain is fully queryable without relying solely on
+    /// the domain event.
+    /// </summary>
+    /// <param name="newConsentId">The id of the consent that replaces this one.</param>
+    /// <param name="utcNow">
+    ///     Current UTC instant, injected by the application layer so time is
+    ///     deterministic in tests (use ISystemClock.UtcNow at the call-site).
+    /// </param>
+    /// <exception cref="DomainException">
+    ///     Thrown when the consent is already in a terminal state
+    ///     (Revoked, Superseded, or Expired).
+    /// </exception>
+    public void MarkSuperseded(UserConsentId newConsentId, DateTimeOffset utcNow)
     {
+        // Idempotency: already superseded by the same consent → no-op.
+        if (Status == ConsentStatus.Superseded && SupersededConsentId == newConsentId)
+            return;
+
+        // Guard: terminal states may not be superseded.
+        if (Status is ConsentStatus.Revoked
+                    or ConsentStatus.Superseded
+                    or ConsentStatus.Expired)
+            throw new DomainException(
+                $"Cannot supersede a consent that is already {Status}.",
+                "CONSENT_ALREADY_TERMINAL");
+
+        // ── Mutation ──────────────────────────────────────────────────────────────
+        SupersededConsentId = newConsentId;
         Status = ConsentStatus.Superseded;
         IsActive = false;
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt = utcNow.UtcDateTime;
 
         AddDomainEvent(new UserConsentSupersededEvent(UserId, ClientId.Value, newConsentId));
     }
 
     /// <summary>
-    /// Adds new scopes to the consent. Used when the user grants additional
-    /// permissions to an already-authorized client.
+    /// Expands the granted scopes by creating a new consent that supersedes this one.
+    /// The union of existing and additional scopes is carried forward.
+    /// Invariant: scope widening always produces a new audit record; this grant
+    /// is permanently superseded.
     /// </summary>
-    public void AddScopes(IEnumerable<string> newScopeNames)
+    /// <returns>The new <see cref="UserConsent"/> that replaces this one.</returns>
+    public UserConsent ExpandScopes(IEnumerable<string> additionalScopes, DateTimeOffset utcNow)
     {
-        EnsureActive();
+        EnsureActive();   // throws if Revoked / Superseded / Expired
 
-        foreach (var name in newScopeNames)
-        {
-            var normalized = name.ToLowerInvariant().Trim();
-            if (!_scopes.Any(s => s.Name == normalized))
-                _scopes.Add(new ConsentScope(name));
-        }
+        var normalizedNew = additionalScopes
+            .Select(s => s.ToLowerInvariant().Trim())
+            .Where(s => !string.IsNullOrEmpty(s))
+            .ToList();
 
-        UpdatedAt = DateTime.UtcNow;
+        if (normalizedNew.Count == 0)
+            throw new DomainException("At least one additional scope must be provided.", "EMPTY_SCOPES");
+
+        // Union: keep every scope the user already granted + the new ones.
+        var combinedScopes = _scopes
+            .Select(s => s.Name)
+            .Union(normalizedNew, StringComparer.Ordinal) // already normalised
+            .ToList();
+
+        // Carry all binding context forward to the replacement consent.
+        var newConsent = new UserConsent(
+            UserConsentId.New(),
+            UserId,
+            ClientId,
+            combinedScopes,
+            RedirectUri,
+            WasPkceUsed,
+            GrantedFromIp,
+            ExpiresAt);
+
+        MarkSuperseded(newConsent.Id, utcNow);
+
+        return newConsent;
     }
 
     /// <summary>

@@ -23,7 +23,7 @@ namespace Playbook.Security.IdP.Domain.Entities;
 /// </summary>
 public sealed class UserDevice : AuditableEntity<DeviceId>
 {
-    private const int AutoSuspendFailureThreshold = 3;
+    private const int _autoSuspendFailureThreshold = 3;
 
     // ── Identity & Hardware ───────────────────────────────────────────────────
     public UserId UserId { get; private set; } = null!;
@@ -161,8 +161,8 @@ public sealed class UserDevice : AuditableEntity<DeviceId>
     {
         FailureCount++;
 
-        if (FailureCount >= AutoSuspendFailureThreshold)
-            Suspend($"Automatically suspended after {AutoSuspendFailureThreshold} consecutive failures.");
+        if (FailureCount >= _autoSuspendFailureThreshold)
+            Suspend($"Automatically suspended after {_autoSuspendFailureThreshold} consecutive failures.");
     }
 
     public void ResetFailureCount()

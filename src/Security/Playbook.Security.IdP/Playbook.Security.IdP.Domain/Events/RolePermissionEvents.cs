@@ -7,3 +7,5 @@ namespace Playbook.Security.IdP.Domain.Events;
 
 public record RolePermissionAddedEvent(RoleId RoleId, PermissionId PermissionId) : DomainEvent;
 public record RolePermissionRemovedEvent(RoleId RoleId, PermissionId PermissionId) : DomainEvent;
+public record RoleConflictAddedEvent(RoleId RoleId, RoleId ConflictingRoleId) : DomainEvent;
+public record RoleConflictRemovedEvent(RoleId RoleId, RoleId ConflictingRoleId) : DomainEvent;
