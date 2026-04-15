@@ -16,8 +16,8 @@ public sealed partial class IdempotencyBehavior<TRequest, TResponse>(
     where TRequest : IIdempotentCommand
     where TResponse : IErrorOr
 {
-    private static readonly TimeSpan CacheDuration = TimeSpan.FromHours(24);
-    private static readonly TimeSpan LockDuration = TimeSpan.FromMinutes(1);
+    private static readonly TimeSpan _cacheDuration = TimeSpan.FromHours(24);
+    private static readonly TimeSpan _lockDuration = TimeSpan.FromMinutes(1);
 
     public async Task<TResponse> Handle(
         TRequest request,
@@ -28,7 +28,7 @@ public sealed partial class IdempotencyBehavior<TRequest, TResponse>(
 
         // 1. ATOMIC ATTEMPT: Try to reserve this RequestId
         // If this returns false, the ID is either 'In Progress' or 'Completed'
-        if (!await idempotencyService.TryReserveAsync(requestId, LockDuration))
+        if (!await idempotencyService.TryReserveAsync(requestId, _lockDuration))
         {
             var cachedResponse = await idempotencyService.GetResponseAsync<TResponse>(requestId);
 
@@ -54,7 +54,7 @@ public sealed partial class IdempotencyBehavior<TRequest, TResponse>(
             // Critical system failures (Exceptions) shouldn't be cached so they can be retried.
             if (!response.IsError || IsBusinessFailure(response.Errors ?? []))
             {
-                await idempotencyService.CompleteAsync(requestId, response, CacheDuration);
+                await idempotencyService.CompleteAsync(requestId, response, _cacheDuration);
             }
 
             return response;
