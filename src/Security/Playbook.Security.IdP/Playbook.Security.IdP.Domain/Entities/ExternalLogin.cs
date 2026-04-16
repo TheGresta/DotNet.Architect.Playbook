@@ -52,7 +52,6 @@ public sealed class ExternalLogin : Entity<ExternalLoginId>
         Provider = provider.ToLowerInvariant().Trim();
         ProviderSubjectId = providerSubjectId.Trim();
         ProviderEmail = providerEmail?.Trim().ToLowerInvariant();
-        LinkedAt = DateTime.UtcNow;
         LinkedAt = utcNow;
     }
 

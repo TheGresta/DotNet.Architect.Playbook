@@ -53,10 +53,11 @@ public sealed partial class TransactionBehavior<TRequest, TResponse>(
         }
         catch (Exception ex)
         {
+            // 5. Fatal catch-all: If DB snaps or an Event Handler crashes
+            LogFatal(logger, ex, requestName);
+
             try
             {
-                // 5. Fatal catch-all: If DB snaps or an Event Handler crashes
-                LogFatal(logger, ex, requestName);
                 await unitOfWork.RollbackTransactionAsync(cancellationToken);
             }
             catch (Exception rollbackEx)

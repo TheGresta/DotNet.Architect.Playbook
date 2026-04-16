@@ -105,6 +105,7 @@ public sealed class AuditLog
         bool isSuccess = true,
         AuditSeverity severity = AuditSeverity.Info,
         string? previousHash = null,
+        DateTimeOffset? occurredAtUtc = null,
         string? geoCountry = null,
         string? geoCity = null,
         double? geoLatitude = null,
@@ -126,8 +127,10 @@ public sealed class AuditLog
             UserAgent = userAgent,
             CorrelationId = correlationId,
             IsSuccess = isSuccess,
-            Severity = isSuccess ? severity : AuditSeverity.Warning,
-            OccurredAtUtc = DateTime.UtcNow,
+            Severity = !isSuccess && severity == AuditSeverity.Info
+                ? AuditSeverity.Warning
+                : severity,
+            OccurredAtUtc = occurredAtUtc?.UtcDateTime ?? DateTime.UtcNow,
             ServiceName = serviceName,
             Environment = environment,
             GeoCountry = geoCountry,

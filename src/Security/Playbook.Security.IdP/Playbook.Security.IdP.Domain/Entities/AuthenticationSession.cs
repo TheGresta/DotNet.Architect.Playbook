@@ -95,7 +95,6 @@ public sealed class AuthenticationSession : Entity<AuthenticationSessionId>
 
     // ── Factory ───────────────────────────────────────────────────────────────
     private AuthenticationSession(
-        AuthenticationSessionId id,
         UserId userId,
         DeviceId deviceId,
         ClientId clientId,
@@ -104,9 +103,10 @@ public sealed class AuthenticationSession : Entity<AuthenticationSessionId>
         string? nonce,
         string? codeChallenge,
         string? codeChallengeMethod,
-        AuthenticationRequirement requirement)
+        AuthenticationRequirement requirement,
+        DateTimeOffset utcNow)
     {
-        Id = id;
+        Id = AuthenticationSessionId.New();
         UserId = userId;
         DeviceId = deviceId;
         ClientId = clientId;
@@ -117,7 +117,7 @@ public sealed class AuthenticationSession : Entity<AuthenticationSessionId>
         CodeChallengeMethod = codeChallengeMethod;
         Requirement = requirement;
         Status = AuthStep.Initialized;
-        ExpiresAt = DateTime.UtcNow.AddMinutes(10);  // 10min window for full flow
+        ExpiresAt = utcNow.UtcDateTime.AddMinutes(10);  // 10min window for full flow
 
         AddDomainEvent(new AuthSessionStartedEvent(Id, UserId, CorrelationId.Value));
     }
@@ -132,6 +132,7 @@ public sealed class AuthenticationSession : Entity<AuthenticationSessionId>
         string correlationId,
         string ipAddress,
         bool isTrustedDevice,
+        DateTimeOffset utcNow,
         string? nonce = null,
         string? codeChallenge = null,
         string? codeChallengeMethod = null)
@@ -149,7 +150,6 @@ public sealed class AuthenticationSession : Entity<AuthenticationSessionId>
                 "Only S256 and plain code challenge methods are supported.", "INVALID_PKCE_METHOD");
 
         var session = new AuthenticationSession(
-            AuthenticationSessionId.New(),
             userId,
             deviceId,
             ClientId.Create(clientId),
@@ -158,7 +158,8 @@ public sealed class AuthenticationSession : Entity<AuthenticationSessionId>
             nonce,
             codeChallenge,
             codeChallengeMethod,
-            AuthenticationRequirement.Standard);
+            AuthenticationRequirement.Standard,
+            utcNow);
 
         if (isTrustedDevice)
         {
@@ -177,6 +178,9 @@ public sealed class AuthenticationSession : Entity<AuthenticationSessionId>
         EnsureNotExpiredOrTerminated();
         if (!_authMethodReferences.Contains("pwd"))
             _authMethodReferences.Add("pwd");
+
+        if (IsMfaBypassedByTrust)
+            TransitionToVerified(string.Join(" ", _authMethodReferences));
     }
 
     public void InitiateMfa(MfaCodeHash hashedCode, MfaMethod method)
@@ -193,7 +197,7 @@ public sealed class AuthenticationSession : Entity<AuthenticationSessionId>
         AddDomainEvent(new MfaChallengedEvent(Id, UserId));
     }
 
-    public bool AttemptMfa(MfaCodeHash providedCodeHash)
+    public bool AttemptMfa(MfaCodeHash providedCodeHash, DateTimeOffset utcNow)
     {
         EnsureNotExpiredOrTerminated();
 
@@ -207,7 +211,7 @@ public sealed class AuthenticationSession : Entity<AuthenticationSessionId>
         }
 
         MfaAttemptCount++;
-        MfaLastAttemptAt = DateTime.UtcNow;
+        MfaLastAttemptAt = utcNow.UtcDateTime;
 
         if (MfaChallengeCode != providedCodeHash)
             return false;
@@ -258,6 +262,8 @@ public sealed class AuthenticationSession : Entity<AuthenticationSessionId>
     /// </summary>
     public string IssueAuthorizationCode()
     {
+        EnsureNotExpiredOrTerminated();
+
         if (Status != AuthStep.Verified)
             throw new DomainException("Session must be verified before issuing a code.", "SESSION_NOT_VERIFIED");
 
@@ -288,12 +294,14 @@ public sealed class AuthenticationSession : Entity<AuthenticationSessionId>
         AddDomainEvent(new AuthSessionVerifiedEvent(Id, UserId, DeviceId));
     }
 
-    private void EnsureNotExpiredOrTerminated()
+    private void EnsureNotExpiredOrTerminated(DateTimeOffset? utcNow = null)
     {
         if (Status == AuthStep.Terminated)
             throw new DomainException("Session has been terminated.", "SESSION_TERMINATED");
 
-        if (DateTime.UtcNow > ExpiresAt)
+        var now = utcNow?.UtcDateTime ?? DateTime.UtcNow;
+
+        if (now > ExpiresAt)
         {
             Status = AuthStep.Expired;
             throw new DomainException(

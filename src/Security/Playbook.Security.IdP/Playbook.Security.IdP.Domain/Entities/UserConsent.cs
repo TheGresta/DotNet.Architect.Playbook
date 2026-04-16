@@ -94,11 +94,12 @@ public sealed class UserConsent : AuditableEntity<UserConsentId>
         string redirectUri,
         bool wasPkceUsed = false,
         string? grantedFromIp = null,
-        TimeSpan? duration = null)
+        TimeSpan? duration = null,
+        DateTimeOffset? utcNow = null)
     {
         var scopeList = scopes.ToList();
 
-        if (!scopeList.Any())
+        if (scopeList.Count == 0)
             throw new DomainException("At least one scope must be granted.", "EMPTY_SCOPES");
 
         if (string.IsNullOrWhiteSpace(redirectUri))
@@ -108,7 +109,9 @@ public sealed class UserConsent : AuditableEntity<UserConsentId>
             throw new DomainException("Consent duration must be a positive value.", "INVALID_DURATION");
 
         var client = ClientId.Create(clientId);
-        var expiry = duration.HasValue ? DateTime.UtcNow.Add(duration.Value) : (DateTime?)null;
+
+        var now = utcNow ?? DateTimeOffset.UtcNow;
+        var expiry = duration.HasValue ? now.UtcDateTime.Add(duration.Value) : (DateTime?)null;
 
         return new UserConsent(
             UserConsentId.New(), userId, client, scopeList,
@@ -117,13 +120,13 @@ public sealed class UserConsent : AuditableEntity<UserConsentId>
 
     // ── Domain Behaviours ─────────────────────────────────────────────────────
 
-    public void Revoke()
+    public void Revoke(DateTimeOffset utcNow)
     {
         if (Status == ConsentStatus.Revoked) return;
 
         Status = ConsentStatus.Revoked;
         IsActive = false;
-        UpdatedAt = DateTime.UtcNow;
+        UpdatedAt = utcNow.UtcDateTime;
 
         AddDomainEvent(new UserConsentRevokedEvent(UserId, ClientId.Value));
     }

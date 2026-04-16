@@ -35,7 +35,7 @@ public sealed class Role : AuditableEntity<RoleId>
     // ORM constructor
     private Role() { }
 
-    public Role(string name, string description, int priority = 0, bool isSystemRole = false)
+    private Role(string name, string description, int priority, bool isSystemRole, DateTime createdAt, UserId createdBy)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new DomainException("Role name cannot be empty.", "INVALID_ROLE_NAME");
@@ -47,34 +47,60 @@ public sealed class Role : AuditableEntity<RoleId>
         IsSystemRole = isSystemRole;
     }
 
-    public void UpdateDescription(string description)
+    public static Role Create(
+        string name,
+        string description,
+        DateTimeOffset utcNow,
+        UserId createdBy,
+        int? priority = null,
+        bool? isSystemRole = null)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            throw new DomainException("Role name cannot be empty.", "INVALID_ROLE_NAME");
+
+        string roleName = name.Trim();
+        string roleDescription = description?.Trim() ?? string.Empty;
+        int rolePriority = priority ?? 0;
+        bool roleIsSystemRole = isSystemRole ?? false;
+        var createdAt = utcNow.UtcDateTime;
+
+        return new Role(
+            roleName,
+            roleDescription,
+            rolePriority,
+            roleIsSystemRole,
+            createdAt,
+            createdBy);
+    }
+
+    public void UpdateDescription(string description, DateTimeOffset utcNow, UserId updatedBy)
     {
         Description = description?.Trim() ?? string.Empty;
-        UpdatedAt = DateTime.UtcNow;
+        SetUpdateMetadata(utcNow, updatedBy);
     }
 
-    public void SetPriority(int priority)
+    public void SetPriority(int priority, DateTimeOffset utcNow, UserId updatedBy)
     {
         Priority = priority;
-        UpdatedAt = DateTime.UtcNow;
+        SetUpdateMetadata(utcNow, updatedBy);
     }
 
-    public void AddPermission(Permission permission)
+    public void AddPermission(Permission permission, DateTimeOffset utcNow, UserId updatedBy)
     {
         if (_permissions.Any(p => p.Id == permission.Id)) return;
         _permissions.Add(permission);
-        UpdatedAt = DateTime.UtcNow;
+        SetUpdateMetadata(utcNow, updatedBy);
 
         AddDomainEvent(new RolePermissionAddedEvent(Id, permission.Id));
     }
 
-    public void RemovePermission(PermissionId permissionId)
+    public void RemovePermission(PermissionId permissionId, DateTimeOffset utcNow, UserId updatedBy)
     {
         var permission = _permissions.FirstOrDefault(p => p.Id == permissionId);
         if (permission is null) return;
 
         _permissions.Remove(permission);
-        UpdatedAt = DateTime.UtcNow;
+        SetUpdateMetadata(utcNow, updatedBy);
 
         AddDomainEvent(new RolePermissionRemovedEvent(Id, permissionId));
     }
@@ -92,7 +118,7 @@ public sealed class Role : AuditableEntity<RoleId>
     /// Registers a one-directional conflict edge on this role.
     /// Call via <see cref="RoleConflictService"/> only, which ensures symmetry.
     /// </summary>
-    internal void RegisterConflict(RoleId conflictingRoleId, DateTimeOffset utcNow)
+    internal void RegisterConflict(RoleId conflictingRoleId, DateTimeOffset utcNow, UserId updatedBy)
     {
         if (conflictingRoleId == Id)
             throw new DomainException("A role cannot conflict with itself.", "SELF_CONFLICT");
@@ -100,7 +126,7 @@ public sealed class Role : AuditableEntity<RoleId>
         if (_conflictsWiths.Contains(conflictingRoleId)) return;
 
         _conflictsWiths.Add(conflictingRoleId);
-        UpdatedAt = utcNow.UtcDateTime;                         // ← clock injected, not DateTime.UtcNow
+        SetUpdateMetadata(utcNow, updatedBy);
         AddDomainEvent(new RoleConflictAddedEvent(Id, conflictingRoleId));
     }
 
@@ -108,11 +134,11 @@ public sealed class Role : AuditableEntity<RoleId>
     /// Removes a one-directional conflict edge from this role.
     /// Call via <see cref="RoleConflictService"/> only.
     /// </summary>
-    internal void DeregisterConflict(RoleId conflictingRoleId, DateTimeOffset utcNow)
+    internal void DeregisterConflict(RoleId conflictingRoleId, DateTimeOffset utcNow, UserId updatedBy)
     {
         if (!_conflictsWiths.Remove(conflictingRoleId)) return;
 
-        UpdatedAt = utcNow.UtcDateTime;
+        SetUpdateMetadata(utcNow, updatedBy);
         AddDomainEvent(new RoleConflictRemovedEvent(Id, conflictingRoleId));
     }
 

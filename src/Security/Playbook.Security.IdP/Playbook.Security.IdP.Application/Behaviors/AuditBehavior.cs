@@ -3,17 +3,21 @@
 using MediatR;
 
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 using Playbook.Security.IdP.Application.Abstractions.Data;
 using Playbook.Security.IdP.Application.Abstractions.Messaging;
 using Playbook.Security.IdP.Application.Abstractions.Security;
+using Playbook.Security.IdP.Application.Options;
 using Playbook.Security.IdP.Domain.Aggregates.AuditAggregate;
 
 namespace Playbook.Security.IdP.Application.Behaviors;
 
-public sealed class AuditBehavior<TRequest, TResponse>(
+public sealed partial class AuditBehavior<TRequest, TResponse>(
     IAuditRepository auditRepository,
     IRequestContext requestContext,
+    IAuditKeyProvider auditKeyProvider,
+    IOptions<AuditOptions> auditOptions,
     ILogger<AuditBehavior<TRequest, TResponse>> logger)
     : IPipelineBehavior<TRequest, TResponse>
     where TRequest : IRequest<TResponse>, IAuditableRequest
@@ -24,47 +28,49 @@ public sealed class AuditBehavior<TRequest, TResponse>(
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
-        // 1. Execute the Primary Business Logic
-        // We wait for the response so we can audit the outcome (Success/Failure)
+        // ── 1. Execute the primary business logic first ──────────────────────
         var response = await next();
 
+        // ── 2. Audit is a cross-cutting concern; never break the request ─────
         try
         {
-            // 2. Build the Immutable Audit Record
-            // We pull data from the IAuditableRequest (The "What") 
-            // and the IRequestContext (The "Who/Where")
+            var auditOptionsValue = auditOptions.Value;
+
+            var hmacKey = await auditKeyProvider.GetKeyAsync(cancellationToken);
+
             var auditLog = AuditLog.Create(
                 actorId: requestContext.UserId,
                 action: typeof(TRequest).Name,
                 resourceName: request.ResourceName,
                 resourceId: request.ResourceId,
-                serviceName: string.Empty,
-                environment: string.Empty,
-                hmacKey: [],
                 payload: request.GetAuditSummary(),
                 ipAddress: requestContext.IpAddress,
                 userAgent: requestContext.UserAgent,
                 correlationId: requestContext.CorrelationId,
-                isSuccess: !response.IsError
-            );
+                hmacKey: hmacKey,
+                serviceName: auditOptionsValue.ServiceName,
+                environment: auditOptionsValue.EnvironmentName,
+                isSuccess: !response.IsError);
 
-            // 3. Persist to the Audit Store
-            // This is handled within the same Unit of Work as the main request
-            // to ensure the action and the audit log are atomically committed.
             await auditRepository.AddAsync(auditLog, cancellationToken);
         }
         catch (Exception ex)
         {
-            // 4. Critical Failure Handling
-            // If auditing fails, we log a Critical Error to Grafana/Loki.
-            logger.LogCritical(ex,
-                "AUDIT FAILURE: Could not persist audit log for {RequestName}. CorrelationId: {CorrelationId}",
-                typeof(TRequest).Name,
-                requestContext.CorrelationId);
-
-            throw;
+            // ⚠ Audit failure is NEVER allowed to fail a successful request.
+            // Log at Critical so on-call is alerted, but return the real response.
+            LogAuditFailure(logger, typeof(TRequest).Name, requestContext.CorrelationId, ex);
         }
 
         return response;
     }
+
+    [LoggerMessage(
+        Level = LogLevel.Critical,
+        Message = "Audit pipeline failed for request {RequestName} (correlation: {CorrelationId}). " +
+                  "The business response was returned but no audit record was persisted.")]
+    private static partial void LogAuditFailure(
+        ILogger logger,
+        string requestName,
+        string correlationId,
+        Exception ex);
 }

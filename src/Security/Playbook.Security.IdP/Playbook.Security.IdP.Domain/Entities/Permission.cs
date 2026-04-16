@@ -45,12 +45,6 @@ public sealed class Permission : Entity<PermissionId>
         if (string.IsNullOrWhiteSpace(name))
             throw new DomainException("Permission name cannot be empty.", "INVALID_PERMISSION_NAME");
 
-        // Enforce namespace:resource:action format
-        if (name.Split(':').Length != 3)
-            throw new DomainException(
-                "Permission name must follow namespace:resource:action format.",
-                "INVALID_PERMISSION_FORMAT");
-
         Id = id;
 
         var trimmedName = name.Trim();

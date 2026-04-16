@@ -18,10 +18,15 @@ public sealed class IncludePath<TEntity>
 
     internal static IncludePath<TEntity> Create(
         LambdaExpression navigation,
-        IReadOnlyList<LambdaExpression> thenIncludes) =>
-        new()
+        IReadOnlyList<LambdaExpression> thenIncludes)
+    {
+        ArgumentNullException.ThrowIfNull(navigation);
+        ArgumentNullException.ThrowIfNull(thenIncludes);
+
+        return new()
         {
             NavigationExpression = navigation,
-            ThenIncludes = thenIncludes
+            ThenIncludes = [.. thenIncludes]
         };
+    }
 }
