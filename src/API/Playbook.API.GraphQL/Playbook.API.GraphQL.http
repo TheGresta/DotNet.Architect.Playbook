@@ -1,0 +1,107 @@
+@host = https://localhost:7050
+
+# ──────────────────────────────────────────────────────────────────────────────
+# GraphQL endpoint: POST /graphql
+# Banana Cake Pop (Nitro) IDE: open https://localhost:7050/graphql in a browser
+# Tip: run the app and copy a real author/book ID from Nitro to use below
+# ──────────────────────────────────────────────────────────────────────────────
+
+### 1. Paginated books — filter by genre, sort by rating DESC
+POST {{host}}/graphql
+Content-Type: application/json
+
+{
+  "query": "query PaginatedBooks($genre: Genre!) { books(first: 5, where: { genre: { eq: $genre } }, order: [{ rating: DESC }]) { totalCount pageInfo { hasNextPage endCursor } nodes { id title genre rating publishedYear author { fullName nationality } } } }",
+  "variables": { "genre": "SCIENCE" }
+}
+
+###
+
+### 2. All authors — filter by nationality, sort by last name
+POST {{host}}/graphql
+Content-Type: application/json
+
+{
+  "query": "{ authors(first: 10, where: { nationality: { eq: \"British\" } }, order: [{ lastName: ASC }]) { totalCount nodes { fullName birthDate } } }"
+}
+
+###
+
+### 3. Cursor pagination — get next page (replace cursor with endCursor from query 1)
+POST {{host}}/graphql
+Content-Type: application/json
+
+{
+  "query": "query NextPage($cursor: String!) { books(first: 5, after: $cursor) { nodes { title rating } pageInfo { hasNextPage endCursor } } }",
+  "variables": { "cursor": "REPLACE_WITH_END_CURSOR" }
+}
+
+###
+
+### 4. Author with nested books — filter and sort nested field
+POST {{host}}/graphql
+Content-Type: application/json
+
+{
+  "query": "query AuthorBooks($authorId: UUID!) { authorById(id: $authorId) { fullName nationality books(where: { publishedYear: { gt: 1950 } }, order: [{ rating: DESC }]) { title publishedYear rating } } }",
+  "variables": { "authorId": "05eff1cf-c789-1c62-17b5-3888d7cda716" }
+}
+
+###
+
+### 5. N+1 proof — fetch 50 books, all author lookups batch into 1 repository call
+POST {{host}}/graphql
+Content-Type: application/json
+
+{
+  "query": "{ books(first: 50) { nodes { title author { fullName nationality } } } }"
+}
+
+###
+
+### 6. Add author mutation
+POST {{host}}/graphql
+Content-Type: application/json
+
+{
+  "query": "mutation AddAuthor($input: AddAuthorInput!) { addAuthor(input: $input) { id fullName nationality birthDate } }",
+  "variables": {
+    "input": {
+      "firstName": "Isaac",
+      "lastName": "Asimov",
+      "nationality": "American",
+      "birthDate": "1920-01-02"
+    }
+  }
+}
+
+###
+
+### 7. Add book mutation (replace authorId with a real ID from query 2 or Nitro)
+POST {{host}}/graphql
+Content-Type: application/json
+
+{
+  "query": "mutation AddBook($input: AddBookInput!) { addBook(input: $input) { id title genre rating author { fullName } } }",
+  "variables": {
+    "input": {
+      "authorId": "05eff1cf-c789-1c62-17b5-3888d7cda716",
+      "title": "Foundation",
+      "genre": "SCIENCE",
+      "publishedYear": 1951,
+      "rating": 4.8,
+      "pageCount": 244,
+      "isbn": "978-0-553-29335-7"
+    }
+  }
+}
+
+###
+
+### 8. Depth limit test — HC rejects this (exceeds max depth of 5)
+POST {{host}}/graphql
+Content-Type: application/json
+
+{
+  "query": "{ authors { nodes { books { nodes { author { fullName books { nodes { title } } } } } } } }"
+}

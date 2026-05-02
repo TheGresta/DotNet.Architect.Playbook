@@ -35,6 +35,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Playbook.Persistence.Meilis
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Playbook.Persistence.HybridCaching", "src\Persistence\Playbook.Persistence.HybridCaching\Playbook.Persistence.HybridCaching.csproj", "{355635A1-C270-43B8-9344-A1CE0C7641B3}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "API", "API", "{A45E8E15-7EEB-47BB-B64E-E3D5189999E3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Playbook.API.GraphQL", "src\API\Playbook.API.GraphQL\Playbook.API.GraphQL.csproj", "{992C1FAE-2838-4D3F-9467-AA75261D9741}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -89,6 +93,10 @@ Global
 		{355635A1-C270-43B8-9344-A1CE0C7641B3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{355635A1-C270-43B8-9344-A1CE0C7641B3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{355635A1-C270-43B8-9344-A1CE0C7641B3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{992C1FAE-2838-4D3F-9467-AA75261D9741}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{992C1FAE-2838-4D3F-9467-AA75261D9741}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{992C1FAE-2838-4D3F-9467-AA75261D9741}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{992C1FAE-2838-4D3F-9467-AA75261D9741}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -109,6 +117,8 @@ Global
 		{51DC47D0-4B18-4023-8044-897B6CABFA04} = {D5F16108-D25F-4E89-8EE2-D148134F1CFC}
 		{8137A451-AD7F-40EC-AA15-828DE2460869} = {B8CE2325-FEDF-4E98-A36F-75A895F6895F}
 		{355635A1-C270-43B8-9344-A1CE0C7641B3} = {B8CE2325-FEDF-4E98-A36F-75A895F6895F}
+		{A45E8E15-7EEB-47BB-B64E-E3D5189999E3} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{992C1FAE-2838-4D3F-9467-AA75261D9741} = {A45E8E15-7EEB-47BB-B64E-E3D5189999E3}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {EA232F1A-641A-407A-B4CE-E71BB7CF7D6B}
